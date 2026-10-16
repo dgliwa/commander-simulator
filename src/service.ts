@@ -25,15 +25,19 @@ export class CommanderSimulatorService {
     };
   }
 
+  builtDecks() {
+    return { decks: this.magic.listBuilt() };
+  }
+
   createPod(input: { name: string; participants: Array<{ publicId: string; persona?: ForgePersona }> }) {
     const participants = validateParticipants(input.participants);
-    for (const player of participants) this.magic.get(player.publicId);
+    for (const player of participants) this.assertBuilt(player.publicId);
     return this.database.createPod(cleanName(input.name), participants);
   }
 
   updatePod(id: string, input: { name?: string; participants?: Array<{ publicId: string; persona?: ForgePersona }> }) {
     const participants = input.participants ? validateParticipants(input.participants) : undefined;
-    if (participants) for (const player of participants) this.magic.get(player.publicId);
+    if (participants) for (const player of participants) this.assertBuilt(player.publicId);
     return this.database.updatePod(id, { name: input.name === undefined ? undefined : cleanName(input.name), participants });
   }
 
@@ -59,7 +63,7 @@ export class CommanderSimulatorService {
     const games = integer(input.games ?? 1, 1, 10, "games");
     const timeoutSeconds = integer(input.timeoutSeconds ?? 120, 10, 300, "timeoutSeconds");
     const seed = input.seed === undefined ? randomInt(1, 2_147_483_647) : integer(input.seed, 0, 2_147_483_647, "seed");
-    const participants = pod.participants.map(participant => ({ ...participant, ...this.magic.get(participant.publicId) })).map(item => ({
+    const participants = pod.participants.map(participant => ({ ...participant, ...this.assertBuilt(participant.publicId) })).map(item => ({
       publicId: item.publicId,
       persona: item.persona,
       seat: item.seat,
@@ -72,6 +76,7 @@ export class CommanderSimulatorService {
         publicUrl: item.publicUrl,
         archivedAt: item.archivedAt,
         snapshotRefreshedAt: item.snapshotRefreshedAt,
+        tags: item.tags,
         cards: item.cards,
       },
     }));
@@ -110,9 +115,16 @@ export class CommanderSimulatorService {
   status() {
     return {
       ...this.database.summary(),
+      builtDecks: this.magic.listBuilt().length,
       forge: { java: this.paths.java, jar: this.paths.forgeJar, deckDirectory: this.paths.deckDirectory },
       limits: { players: "2-8", gamesPerInvocation: "1-10", perGameTimeoutSeconds: "10-300" },
     };
+  }
+
+  private assertBuilt(publicId: string) {
+    const deck = this.magic.get(publicId);
+    if (!deck.tags.includes("built")) throw new Error(`${deck.name} is not tagged built in Magic Workspace.`);
+    return deck;
   }
 }
 

@@ -3,12 +3,20 @@ export declare class MagicDeckSource {
     private readonly db;
     constructor(path: string);
     close(): void;
+    listBuilt(): {
+        publicId: string;
+        name: string;
+        publicUrl: string;
+        cardCount: number;
+        snapshotRefreshedAt: string | undefined;
+    }[];
     get(publicId: string): MagicDeckRecord;
     compatibility(publicId: string): {
         deck: {
             publicId: string;
             name: string;
             publicUrl: string;
+            tags: string[];
         };
         commanderCount: number;
         mainboardCount: number;

@@ -2,7 +2,7 @@
 
 An OpenClaw plugin for bounded, durable Magic: The Gathering Commander simulations using [Forge](https://github.com/Card-Forge/forge).
 
-The plugin reads normalized public Moxfield deck snapshots from Magic Workspace, exports temporary Forge `.dck` files, runs Forge's headless Commander mode, and stores results in an owner-only SQLite database. Moxfield remains authoritative; simulations never write to Moxfield or Magic Workspace.
+The plugin reads normalized public Moxfield deck snapshots from Magic Workspace, exports temporary Forge `.dck` files, runs Forge's headless Commander mode, and stores results in an owner-only SQLite database. Only active decks carrying the local `built` tag are eligible for pods. Moxfield remains authoritative; simulations never write to Moxfield or Magic Workspace.
 
 ## Current scope
 
@@ -21,6 +21,7 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 
 - `commander_simulator_status`
 - `commander_personas`
+- `commander_deck_list`
 - `commander_deck_compatibility`
 - `commander_pod_create`
 - `commander_pod_update`

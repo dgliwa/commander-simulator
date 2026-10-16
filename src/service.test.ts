@@ -20,11 +20,13 @@ function fixture() {
   source.exec(`
     CREATE TABLE moxfield_decks(public_id TEXT PRIMARY KEY,name TEXT,format TEXT,visibility TEXT,public_url TEXT,archived_at TEXT,snapshot_refreshed_at TEXT);
     CREATE TABLE moxfield_deck_cards(public_id TEXT,board TEXT,position INTEGER,name TEXT,quantity INTEGER,set_code TEXT,collector_number TEXT);
+    CREATE TABLE moxfield_deck_tags(public_id TEXT,tag TEXT,created_at TEXT,PRIMARY KEY(public_id,tag));
   `);
   const addDeck = (id: string, name: string) => {
     source.prepare("INSERT INTO moxfield_decks VALUES(?,?,?,?,?,?,?)").run(id, name, "commander", "public", `https://moxfield.com/decks/${id}`, null, "2026-01-01T00:00:00Z");
     source.prepare("INSERT INTO moxfield_deck_cards VALUES(?,?,?,?,?,?,?)").run(id, "commanders", 0, `${name} Commander // Back Face`, 1, "TST", "1");
     source.prepare("INSERT INTO moxfield_deck_cards VALUES(?,?,?,?,?,?,?)").run(id, "mainboard", 0, "Forest", 99, "TST", "2");
+    source.prepare("INSERT INTO moxfield_deck_tags VALUES(?,?,?)").run(id, "built", "2026-01-01T00:00:00Z");
   };
   addDeck("deck-a", "Alpha");
   addDeck("deck-b", "Beta");

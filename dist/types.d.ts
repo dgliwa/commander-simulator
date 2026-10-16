@@ -20,6 +20,7 @@ export interface MagicDeckRecord {
     publicUrl: string;
     archivedAt?: string;
     snapshotRefreshedAt?: string;
+    tags: string[];
     cards: MagicDeckCard[];
 }
 export interface MagicDeckCard {

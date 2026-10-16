@@ -14,6 +14,24 @@ export class MagicDeckSource {
     this.db.close();
   }
 
+  listBuilt() {
+    return (this.db.prepare(`
+      SELECT d.public_id,d.name,d.public_url,d.snapshot_refreshed_at,
+        COALESCE(SUM(CASE WHEN c.board IN ('commanders','mainboard') THEN c.quantity ELSE 0 END),0) AS card_count
+      FROM moxfield_decks d
+      JOIN moxfield_deck_tags t ON t.public_id=d.public_id AND t.tag='built'
+      LEFT JOIN moxfield_deck_cards c ON c.public_id=d.public_id
+      WHERE d.archived_at IS NULL
+      GROUP BY d.public_id ORDER BY d.name COLLATE NOCASE
+    `).all() as Row[]).map(row => ({
+      publicId: String(row.public_id),
+      name: String(row.name),
+      publicUrl: String(row.public_url),
+      cardCount: Number(row.card_count),
+      snapshotRefreshedAt: row.snapshot_refreshed_at ? String(row.snapshot_refreshed_at) : undefined,
+    }));
+  }
+
   get(publicId: string): MagicDeckRecord {
     const row = this.db.prepare("SELECT * FROM moxfield_decks WHERE public_id=?").get(publicId) as Row | undefined;
     if (!row) throw new Error(`Unknown Magic Workspace deck: ${publicId}`);
@@ -30,6 +48,7 @@ export class MagicDeckSource {
       collectorNumber: item.collector_number ? String(item.collector_number) : undefined,
     }));
     if (!cards.length) throw new Error(`Deck ${publicId} has no cached snapshot.`);
+    const tags = (this.db.prepare("SELECT tag FROM moxfield_deck_tags WHERE public_id=? ORDER BY tag").all(publicId) as Row[]).map(item => String(item.tag));
     return {
       publicId,
       name: String(row.name),
@@ -38,6 +57,7 @@ export class MagicDeckSource {
       publicUrl: String(row.public_url),
       archivedAt: row.archived_at ? String(row.archived_at) : undefined,
       snapshotRefreshedAt: row.snapshot_refreshed_at ? String(row.snapshot_refreshed_at) : undefined,
+      tags,
       cards,
     };
   }
@@ -54,7 +74,8 @@ export class MagicDeckSource {
     if (deck.format?.toLowerCase() !== "commander") warnings.push(`Deck format is ${deck.format ?? "unknown"}, not Commander.`);
     if (commanderCount < 1 || commanderCount > 2) warnings.push(`Expected one or two commanders; found ${commanderCount}.`);
     if (commanderCount + mainboardCount !== 100) warnings.push(`Commander plus mainboard contains ${commanderCount + mainboardCount} cards instead of 100.`);
-    return { deck: { publicId: deck.publicId, name: deck.name, publicUrl: deck.publicUrl }, commanderCount, mainboardCount, total: commanderCount + mainboardCount, transformedNames, warnings, compatible: warnings.length === 0 };
+    if (!deck.tags.includes("built")) warnings.push("Deck is not tagged built in Magic Workspace.");
+    return { deck: { publicId: deck.publicId, name: deck.name, publicUrl: deck.publicUrl, tags: deck.tags }, commanderCount, mainboardCount, total: commanderCount + mainboardCount, transformedNames, warnings, compatible: warnings.length === 0 };
   }
 }
 

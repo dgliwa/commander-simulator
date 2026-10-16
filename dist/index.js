@@ -46,6 +46,12 @@ export default defineToolPlugin({
             execute: async (_input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.personas()); },
         }),
         tool({
+            name: "commander_deck_list",
+            description: "List active Magic Workspace decks tagged built and therefore eligible for Commander simulation pods.",
+            parameters: Type.Object({}, { additionalProperties: false }),
+            execute: async (_input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.builtDecks()); },
+        }),
+        tool({
             name: "commander_deck_compatibility",
             description: "Inspect one cached Magic Workspace deck for basic Forge Commander compatibility and name normalization warnings.",
             parameters: Type.Object({ publicId: id }, { additionalProperties: false }),

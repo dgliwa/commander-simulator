@@ -14,6 +14,15 @@ export declare class CommanderSimulatorService {
         }[];
         note: string;
     };
+    builtDecks(): {
+        decks: {
+            publicId: string;
+            name: string;
+            publicUrl: string;
+            cardCount: number;
+            snapshotRefreshedAt: string | undefined;
+        }[];
+    };
     createPod(input: {
         name: string;
         participants: Array<{
@@ -40,6 +49,7 @@ export declare class CommanderSimulatorService {
             publicId: string;
             name: string;
             publicUrl: string;
+            tags: string[];
         };
         commanderCount: number;
         mainboardCount: number;
@@ -63,6 +73,7 @@ export declare class CommanderSimulatorService {
     };
     getRun(id: string): import("./types.js").SimulationRun;
     status(): {
+        builtDecks: number;
         forge: {
             java: string;
             jar: string;
@@ -79,4 +90,5 @@ export declare class CommanderSimulatorService {
         games: number;
         lastCompletedAt: string | undefined;
     };
+    private assertBuilt;
 }
