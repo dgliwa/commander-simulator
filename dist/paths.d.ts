@@ -6,5 +6,6 @@ export interface SimulatorPaths {
     forgeDirectory: string;
     deckDirectory: string;
     logDirectory: string;
+    comicDirectory: string;
 }
 export declare function resolveSimulatorPaths(stateDir: string, config: Record<string, unknown>): SimulatorPaths;

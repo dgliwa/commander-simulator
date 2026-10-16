@@ -16,6 +16,9 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - Bounded event-log reading for storytelling and review
 - Durable standings by deck, persona, and deck-persona pairing
 - Deterministic daily four-deck selection with each persona assigned once
+- Deterministic sequential comic rendering through the headless OpenClaw image CLI
+- Resumable page generation with validated owner-only PNGs and a durable prompt manifest
+- Direct summary-and-image delivery to a fixed configured Discord channel
 - Basic deck-count and transformed-card-name compatibility checks
 
 Forge personas are heuristic profiles, not language-model roleplay personas. Richer political and strategic personas remain future work.
@@ -34,6 +37,7 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 - `commander_daily_game`
 - `commander_run_log`
 - `commander_standings`
+- `commander_comic_publish`
 - `commander_simulation_status`
 
 ## Runtime
@@ -48,8 +52,11 @@ Plugin data defaults to:
 - `~/.openclaw/plugins/commander-simulator/simulator.sqlite`
 - `~/.local/share/commander-simulator/data/decks/commander/`
 - `~/.local/share/commander-simulator/data/logs/`
+- `~/.local/share/commander-simulator/data/comics/<run-id>/`
 
 The Magic Workspace registry defaults to `~/.openclaw/plugins/magic-workspace/magic.sqlite`.
+
+Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The renderer calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records an owner-only manifest, and sends the summary plus successful pages only after rendering settles.
 
 ## Safety model
 

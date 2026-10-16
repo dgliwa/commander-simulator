@@ -1,16 +1,19 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { ComicRenderer } from "./comic-renderer.js";
 import { runForge } from "./forge.js";
 import { FORGE_PERSONAS } from "./types.js";
 export class CommanderSimulatorService {
     database;
     magic;
     paths;
-    constructor(database, magic, paths) {
+    options;
+    constructor(database, magic, paths, options = {}) {
         this.database = database;
         this.magic = magic;
         this.paths = paths;
+        this.options = options;
     }
     personas() {
         return {
@@ -153,6 +156,13 @@ export class CommanderSimulatorService {
             ? this.updatePod(existing.id, { participants })
             : this.createPod({ name, participants });
         return this.simulate({ podId: pod.id, games: 1, seed, timeoutSeconds: input.timeoutSeconds ?? 180, confirmed: true });
+    }
+    async publishComic(input, signal) {
+        const run = this.database.getRun(input.runId);
+        if (run.status !== "completed")
+            throw new Error("Comic publication requires a completed simulation run.");
+        const renderer = new ComicRenderer(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
+        return renderer.publish(input, signal);
     }
     status() {
         return {

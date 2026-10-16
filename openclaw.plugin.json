@@ -25,6 +25,17 @@
       "forgeJarPath": {
         "type": "string",
         "description": "Override path to the Forge desktop jar."
+      },
+      "comicDiscordTarget": {
+        "type": "string",
+        "pattern": "^channel:[0-9]{10,30}$",
+        "description": "Fixed Discord channel target for rendered daily comics."
+      },
+      "openclawCommand": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500,
+        "description": "OpenClaw CLI command used by the deterministic comic renderer."
       }
     },
     "additionalProperties": false
@@ -46,6 +57,7 @@
       "commander_daily_game",
       "commander_run_log",
       "commander_standings",
+      "commander_comic_publish",
       "commander_simulation_status"
     ]
   },
@@ -63,6 +75,9 @@
       "sideEffecting": true
     },
     "commander_daily_game": {
+      "sideEffecting": true
+    },
+    "commander_comic_publish": {
       "sideEffecting": true
     }
   }

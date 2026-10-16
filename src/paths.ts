@@ -29,6 +29,7 @@ export interface SimulatorPaths {
   forgeDirectory: string;
   deckDirectory: string;
   logDirectory: string;
+  comicDirectory: string;
 }
 
 export function resolveSimulatorPaths(stateDir: string, config: Record<string, unknown>): SimulatorPaths {
@@ -41,11 +42,12 @@ export function resolveSimulatorPaths(stateDir: string, config: Record<string, u
   const data = resolve(runtime, "data");
   const deckDirectory = resolve(data, "decks/commander");
   const logDirectory = resolve(data, "logs");
-  for (const directory of [resolve(database, ".."), data, deckDirectory, logDirectory]) {
+  const comicDirectory = resolve(data, "comics");
+  for (const directory of [resolve(database, ".."), data, deckDirectory, logDirectory, comicDirectory]) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
   }
   for (const [label, path] of [["Java runtime", java], ["Forge jar", forgeJar], ["Magic Workspace database", magicDatabase]] as const) {
     if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(`${label} not found: ${path}`);
   }
-  return { database, magicDatabase, java, forgeJar, forgeDirectory, deckDirectory, logDirectory };
+  return { database, magicDatabase, java, forgeJar, forgeDirectory, deckDirectory, logDirectory, comicDirectory };
 }

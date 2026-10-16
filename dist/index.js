@@ -8,13 +8,20 @@ import { FORGE_PERSONAS } from "./types.js";
 const id = Type.String({ minLength: 1, maxLength: 200 });
 const persona = Type.Union(FORGE_PERSONAS.map(value => Type.Literal(value)));
 const participant = Type.Object({ publicId: id, persona: Type.Optional(persona) }, { additionalProperties: false });
+const comicPage = Type.Object({
+    pageNumber: Type.Integer({ minimum: 1, maximum: 5 }),
+    prompt: Type.String({ minLength: 1, maxLength: 30_000 }),
+}, { additionalProperties: false });
 async function withService(api, config, operation) {
     const stateDir = api.runtime.state.resolveStateDir(process.env);
     const paths = resolveSimulatorPaths(stateDir, config);
     const database = new SimulatorDatabase(paths.database);
     const magic = new MagicDeckSource(paths.magicDatabase);
     try {
-        return await operation(new CommanderSimulatorService(database, magic, paths));
+        return await operation(new CommanderSimulatorService(database, magic, paths, {
+            comicDiscordTarget: typeof config.comicDiscordTarget === "string" ? config.comicDiscordTarget : undefined,
+            openclawCommand: typeof config.openclawCommand === "string" ? config.openclawCommand : undefined,
+        }));
     }
     finally {
         magic.close();
@@ -31,6 +38,8 @@ export default defineToolPlugin({
         runtimePath: Type.Optional(Type.String({ description: "Commander Simulator runtime root containing Forge and Java." })),
         javaPath: Type.Optional(Type.String({ description: "Override path to the Java executable." })),
         forgeJarPath: Type.Optional(Type.String({ description: "Override path to the Forge desktop jar." })),
+        comicDiscordTarget: Type.Optional(Type.String({ pattern: "^channel:[0-9]{10,30}$", description: "Fixed Discord channel target for rendered daily comics." })),
+        openclawCommand: Type.Optional(Type.String({ minLength: 1, maxLength: 500, description: "OpenClaw CLI command used by the deterministic comic renderer." })),
     }, { additionalProperties: false }),
     tools: tool => [
         tool({
@@ -104,6 +113,17 @@ export default defineToolPlugin({
             description: "Summarize completed-game wins, losses, draws, and win rates by deck, persona, and deck-persona pairing.",
             parameters: Type.Object({}, { additionalProperties: false }),
             execute: async (_input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.standings()); },
+        }),
+        tool({
+            name: "commander_comic_publish",
+            description: "Generate 3-5 comic pages sequentially with the headless image CLI, reuse validated existing pages, and deliver the supplied summary plus successful pages to the configured Discord channel. Requires explicit confirmation.",
+            parameters: Type.Object({
+                confirmed: Type.Literal(true),
+                runId: id,
+                summary: Type.String({ minLength: 1, maxLength: 8_000 }),
+                pages: Type.Array(comicPage, { minItems: 3, maxItems: 5 }),
+            }, { additionalProperties: false }),
+            execute: async (input, config, { api, signal }) => withService(api, config, service => service.publishComic(input, signal)),
         }),
         tool({
             name: "commander_simulation_status",

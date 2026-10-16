@@ -1,3 +1,4 @@
+import { type ComicPublishInput } from "./comic-renderer.js";
 import { SimulatorDatabase } from "./database.js";
 import { MagicDeckSource } from "./magic-source.js";
 import type { SimulatorPaths } from "./paths.js";
@@ -6,7 +7,11 @@ export declare class CommanderSimulatorService {
     private readonly database;
     private readonly magic;
     private readonly paths;
-    constructor(database: SimulatorDatabase, magic: MagicDeckSource, paths: SimulatorPaths);
+    private readonly options;
+    constructor(database: SimulatorDatabase, magic: MagicDeckSource, paths: SimulatorPaths, options?: {
+        comicDiscordTarget?: string;
+        openclawCommand?: string;
+    });
     personas(): {
         personas: {
             name: string;
@@ -99,6 +104,22 @@ export declare class CommanderSimulatorService {
         seed?: number;
         timeoutSeconds?: number;
     }): Promise<import("./types.js").SimulationRun>;
+    publishComic(input: ComicPublishInput, signal?: AbortSignal): Promise<{
+        runId: string;
+        delivered: boolean;
+        discordTarget: string;
+        rendered: {
+            pageNumber: number;
+            path: string;
+            reused: boolean;
+        }[];
+        failed: {
+            pageNumber: number;
+            error: string;
+        }[];
+        delivery: unknown;
+        manifestPath: string;
+    }>;
     status(): {
         builtDecks: number;
         forge: {

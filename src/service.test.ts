@@ -54,9 +54,11 @@ echo 'Game Result: Game 1 ended in 1234 ms. Ai(2)-Beta has won!'
     forgeDirectory: root,
     deckDirectory: join(root, "decks"),
     logDirectory: join(root, "logs"),
+    comicDirectory: join(root, "comics"),
   };
   mkdirSync(paths.deckDirectory, { recursive: true });
   mkdirSync(paths.logDirectory, { recursive: true });
+  mkdirSync(paths.comicDirectory, { recursive: true });
   writeFileSync(paths.forgeJar, "test");
   const database = new SimulatorDatabase(paths.database);
   const magic = new MagicDeckSource(paths.magicDatabase);
