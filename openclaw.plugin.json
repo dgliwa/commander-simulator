@@ -1,0 +1,62 @@
+{
+  "id": "commander-simulator",
+  "name": "Commander Simulator",
+  "description": "Run bounded Forge Commander AI simulations using authoritative Magic Workspace deck snapshots and durable local results.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "databasePath": {
+        "type": "string",
+        "description": "Absolute or OpenClaw-state-relative simulator SQLite path."
+      },
+      "magicDatabasePath": {
+        "type": "string",
+        "description": "Absolute or OpenClaw-state-relative Magic Workspace SQLite path."
+      },
+      "runtimePath": {
+        "type": "string",
+        "description": "Commander Simulator runtime root containing Forge and Java."
+      },
+      "javaPath": {
+        "type": "string",
+        "description": "Override path to the Java executable."
+      },
+      "forgeJarPath": {
+        "type": "string",
+        "description": "Override path to the Forge desktop jar."
+      }
+    },
+    "additionalProperties": false
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "commander_simulator_status",
+      "commander_personas",
+      "commander_deck_compatibility",
+      "commander_pod_create",
+      "commander_pod_update",
+      "commander_pod_delete",
+      "commander_pod_status",
+      "commander_simulate",
+      "commander_simulation_status"
+    ]
+  },
+  "toolMetadata": {
+    "commander_pod_create": {
+      "sideEffecting": true
+    },
+    "commander_pod_update": {
+      "sideEffecting": true
+    },
+    "commander_pod_delete": {
+      "sideEffecting": true
+    },
+    "commander_simulate": {
+      "sideEffecting": true
+    }
+  }
+}
