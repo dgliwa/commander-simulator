@@ -43,6 +43,9 @@
       "commander_pod_delete",
       "commander_pod_status",
       "commander_simulate",
+      "commander_daily_game",
+      "commander_run_log",
+      "commander_standings",
       "commander_simulation_status"
     ]
   },
@@ -57,6 +60,9 @@
       "sideEffecting": true
     },
     "commander_simulate": {
+      "sideEffecting": true
+    },
+    "commander_daily_game": {
       "sideEffecting": true
     }
   }

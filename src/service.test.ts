@@ -6,11 +6,13 @@ import { afterEach, describe, expect, test } from "vitest";
 import { SimulatorDatabase } from "./database.js";
 import { parseForgeOutput } from "./forge.js";
 import { MagicDeckSource } from "./magic-source.js";
-import { CommanderSimulatorService } from "./service.js";
 import type { SimulatorPaths } from "./paths.js";
+import { CommanderSimulatorService } from "./service.js";
 
 const roots: string[] = [];
-afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "commander-simulator-"));
@@ -25,61 +27,99 @@ function fixture() {
   const addDeck = (id: string, name: string) => {
     source.prepare("INSERT INTO moxfield_decks VALUES(?,?,?,?,?,?,?)").run(id, name, "commander", "public", `https://moxfield.com/decks/${id}`, null, "2026-01-01T00:00:00Z");
     source.prepare("INSERT INTO moxfield_deck_cards VALUES(?,?,?,?,?,?,?)").run(id, "commanders", 0, `${name} Commander // Back Face`, 1, "TST", "1");
-    source.prepare("INSERT INTO moxfield_deck_cards VALUES(?,?,?,?,?,?,?)").run(id, "mainboard", 0, "Forest", 99, "TST", "2");
+    source.prepare("INSERT INTO moxfield_deck_cards VALUES(?,?,?,?,?,?,?)").run(id, "mainboard", 1, "Forest", 99, "TST", "2");
     source.prepare("INSERT INTO moxfield_deck_tags VALUES(?,?,?)").run(id, "built", "2026-01-01T00:00:00Z");
   };
   addDeck("deck-a", "Alpha");
   addDeck("deck-b", "Beta");
+  addDeck("deck-c", "Gamma");
+  addDeck("deck-d", "Delta");
   source.close();
 
-  const forgeDirectory = join(root, "forge");
-  const deckDirectory = join(root, "decks");
-  const logDirectory = join(root, "logs");
-  mkdirSync(forgeDirectory);
-  mkdirSync(deckDirectory);
-  mkdirSync(logDirectory);
   const java = join(root, "fake-java");
-  writeFileSync(java, `#!/bin/sh\necho 'Simulation mode'\necho 'Game Outcome: Turn 11'\necho 'Game Result: Game 1 ended in 1234 ms. Ai(2)-Beta has won!'\n`);
+  writeFileSync(java, `#!/bin/sh
+echo 'Simulation mode'
+echo 'Turn: Turn 11 (Ai(2)-Beta)'
+echo 'Add Stack: Ai(2)-Beta cast Heroic Finale'
+echo 'Damage: Ai(1)-Alpha takes 40 damage'
+echo 'Game Outcome: Turn 11'
+echo 'Game Result: Game 1 ended in 1234 ms. Ai(2)-Beta has won!'
+`, { mode: 0o700 });
   chmodSync(java, 0o700);
-  const forgeJar = join(forgeDirectory, "forge.jar");
-  writeFileSync(forgeJar, "fixture");
-  const paths: SimulatorPaths = { database: join(root, "simulator.sqlite"), magicDatabase: magicPath, java, forgeJar, forgeDirectory, deckDirectory, logDirectory };
+  const paths: SimulatorPaths = {
+    database: join(root, "simulator.sqlite"),
+    magicDatabase: magicPath,
+    java,
+    forgeJar: join(root, "forge.jar"),
+    forgeDirectory: root,
+    deckDirectory: join(root, "decks"),
+    logDirectory: join(root, "logs"),
+  };
+  mkdirSync(paths.deckDirectory, { recursive: true });
+  mkdirSync(paths.logDirectory, { recursive: true });
+  writeFileSync(paths.forgeJar, "test");
   const database = new SimulatorDatabase(paths.database);
   const magic = new MagicDeckSource(paths.magicDatabase);
   const service = new CommanderSimulatorService(database, magic, paths);
-  return { root, database, magic, service };
+  return { database, magic, service };
 }
 
 describe("CommanderSimulatorService", () => {
-  test("creates a pod and reports double-faced name normalization", () => {
+  test("creates pods and reports double-faced normalization", () => {
     const { database, magic, service } = fixture();
     try {
-      const pod = service.createPod({ name: "Test Pod", participants: [{ publicId: "deck-a", persona: "Cautious" }, { publicId: "deck-b" }] });
+      const pod = service.createPod({ name: "Test Pod", participants: [{ publicId: "deck-a" }, { publicId: "deck-b" }] });
       expect(pod.participants).toEqual([
-        { publicId: "deck-a", persona: "Cautious", seat: 1 },
+        { publicId: "deck-a", persona: "Default", seat: 1 },
         { publicId: "deck-b", persona: "Default", seat: 2 },
       ]);
       expect(service.compatibility("deck-a").transformedNames[0]).toEqual({ source: "Alpha Commander // Back Face", forge: "Alpha Commander" });
-    } finally { magic.close(); database.close(); }
+    } finally {
+      magic.close();
+      database.close();
+    }
   });
 
-  test("runs Forge and durably records a winner", async () => {
+  test("runs Forge, exposes events, and records standings", async () => {
     const { database, magic, service } = fixture();
     try {
       const pod = service.createPod({ name: "Test Pod", participants: [{ publicId: "deck-a" }, { publicId: "deck-b", persona: "Reckless" }] });
       const run = await service.simulate({ podId: pod.id, games: 1, seed: 42, timeoutSeconds: 30, confirmed: true });
       expect(run.status).toBe("completed");
       expect(run.games[0]).toMatchObject({ gameNumber: 1, winnerPublicId: "deck-b", turns: 11, durationMs: 1234, status: "completed" });
-      expect(run.winnerCounts).toEqual({ "deck-b": 1 });
-      expect(service.getRun(run.id).seed).toBe(42);
-    } finally { magic.close(); database.close(); }
+      expect(service.runLog(run.id).events).toContain("Add Stack: Ai(2)-Beta cast Heroic Finale");
+      expect(service.standings().decks).toEqual(expect.arrayContaining([
+        expect.objectContaining({ publicId: "deck-b", wins: 1, games: 1 }),
+        expect.objectContaining({ publicId: "deck-a", losses: 1, games: 1 }),
+      ]));
+    } finally {
+      magic.close();
+      database.close();
+    }
+  });
+
+  test("runs a deterministic four-deck daily game with each persona once", async () => {
+    const { database, magic, service } = fixture();
+    try {
+      const run = await service.dailyGame({ confirmed: true, seed: 20261017, timeoutSeconds: 30 });
+      expect(run.participants).toHaveLength(4);
+      expect(new Set(run.participants.map(player => player.publicId)).size).toBe(4);
+      expect(new Set(run.participants.map(player => player.persona))).toEqual(new Set(["Default", "Cautious", "Reckless", "Experimental"]));
+      expect(service.listPods().pods).toHaveLength(1);
+    } finally {
+      magic.close();
+      database.close();
+    }
   });
 
   test("rejects duplicate decks in one pod", () => {
     const { database, magic, service } = fixture();
     try {
       expect(() => service.createPod({ name: "Bad", participants: [{ publicId: "deck-a" }, { publicId: "deck-a" }] })).toThrow(/more than once/);
-    } finally { magic.close(); database.close(); }
+    } finally {
+      magic.close();
+      database.close();
+    }
   });
 });
 

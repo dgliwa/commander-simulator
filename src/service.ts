@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { SimulatorDatabase } from "./database.js";
 import { runForge } from "./forge.js";
 import { MagicDeckSource } from "./magic-source.js";
@@ -112,6 +113,55 @@ export class CommanderSimulatorService {
     return this.database.getRun(id);
   }
 
+  runLog(id: string, offset = 0, limit = 300) {
+    const run = this.database.getRun(id);
+    const logRoot = resolve(this.paths.logDirectory);
+    const logPath = resolve(run.logPath);
+    const rel = relative(logRoot, logPath);
+    if (rel.startsWith("..") || isAbsolute(rel)) throw new Error("Simulation log path is outside the managed log directory.");
+    const lines = readFileSync(logPath, "utf8").split(/\r?\n/);
+    const prefixes = [
+      "Simulation mode", "Ai(", "Mulligan:", "Turn:", "Land:", "Add Stack:", "Add To Stack:",
+      "Resolve Stack:", "Combat:", "Damage:", "Life:", "Zone Change:", "Player Control:",
+      "Game Outcome:", "Match Result:", "Game Result:",
+    ];
+    const events = lines.filter(line => prefixes.some(prefix => line.startsWith(prefix)));
+    const safeOffset = integer(offset, 0, Math.max(events.length, 0), "offset");
+    const safeLimit = integer(limit, 1, 500, "limit");
+    return {
+      runId: id,
+      totalEvents: events.length,
+      offset: safeOffset,
+      limit: safeLimit,
+      hasMore: safeOffset + safeLimit < events.length,
+      events: events.slice(safeOffset, safeOffset + safeLimit),
+    };
+  }
+
+  standings() {
+    const deckPersonas = this.database.standings().deckPersonas;
+    return {
+      deckPersonas,
+      decks: aggregateStandings(deckPersonas, entry => `${entry.publicId}\u0000${entry.deckName}`, ([publicId, deckName]) => ({ publicId, deckName })),
+      personas: aggregateStandings(deckPersonas, entry => entry.persona, ([persona]) => ({ persona })),
+    };
+  }
+
+  async dailyGame(input: { confirmed: true; seed?: number; timeoutSeconds?: number }) {
+    const seed = input.seed === undefined ? dailySeed() : integer(input.seed, 0, 2_147_483_647, "seed");
+    const decks = this.magic.listBuilt();
+    if (decks.length < 4) throw new Error("At least four active built decks are required for the daily Commander game.");
+    const selected = shuffle(decks, seed).slice(0, 4);
+    const personas = shuffle([...FORGE_PERSONAS], seed ^ 0x5f3759df);
+    const participants = selected.map((deck, index) => ({ publicId: deck.publicId, persona: personas[index] }));
+    const name = "Daily Commander Game";
+    const existing = this.database.listPods().find(pod => pod.name === name);
+    const pod = existing
+      ? this.updatePod(existing.id, { participants })
+      : this.createPod({ name, participants });
+    return this.simulate({ podId: pod.id, games: 1, seed, timeoutSeconds: input.timeoutSeconds ?? 180, confirmed: true });
+  }
+
   status() {
     return {
       ...this.database.summary(),
@@ -126,6 +176,47 @@ export class CommanderSimulatorService {
     if (!deck.tags.includes("built")) throw new Error(`${deck.name} is not tagged built in Magic Workspace.`);
     return deck;
   }
+}
+
+function aggregateStandings(
+  entries: Array<{ games: number; wins: number; losses: number; draws: number; [key: string]: unknown }>,
+  keyOf: (entry: any) => string,
+  identity: (parts: string[]) => Record<string, string>,
+) {
+  const totals = new Map<string, any>();
+  for (const entry of entries) {
+    const key = keyOf(entry);
+    const current = totals.get(key) ?? { ...identity(key.split("\u0000")), games: 0, wins: 0, losses: 0, draws: 0 };
+    current.games += entry.games;
+    current.wins += entry.wins;
+    current.losses += entry.losses;
+    current.draws += entry.draws;
+    totals.set(key, current);
+  }
+  return [...totals.values()].map(item => ({ ...item, winRate: item.games ? item.wins / item.games : 0 }))
+    .sort((a, b) => b.wins - a.wins || b.games - a.games || String(a.deckName ?? a.persona).localeCompare(String(b.deckName ?? b.persona)));
+}
+
+function shuffle<T>(items: T[], seed: number): T[] {
+  const result = [...items];
+  let state = seed >>> 0 || 0x9e3779b9;
+  const random = () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 0x1_0000_0000;
+  };
+  for (let index = result.length - 1; index > 0; index--) {
+    const swap = Math.floor(random() * (index + 1));
+    [result[index], result[swap]] = [result[swap], result[index]];
+  }
+  return result;
+}
+
+function dailySeed(): number {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return Number(`${value.year}${value.month}${value.day}`);
 }
 
 function cleanName(value: string): string {

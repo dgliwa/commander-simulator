@@ -18,6 +18,18 @@ export declare class SimulatorDatabase {
     finishRun(id: string, games: SimulationGame[], error?: string, now?: string): SimulationRun;
     listRuns(limit?: number): SimulationRun[];
     getRun(id: string): SimulationRun;
+    standings(): {
+        deckPersonas: {
+            publicId: string;
+            deckName: string;
+            persona: string;
+            games: number;
+            wins: number;
+            losses: number;
+            draws: number;
+            winRate: number;
+        }[];
+    };
     summary(): {
         path: string;
         pods: number;

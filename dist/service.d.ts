@@ -72,6 +72,33 @@ export declare class CommanderSimulatorService {
         runs: import("./types.js").SimulationRun[];
     };
     getRun(id: string): import("./types.js").SimulationRun;
+    runLog(id: string, offset?: number, limit?: number): {
+        runId: string;
+        totalEvents: number;
+        offset: number;
+        limit: number;
+        hasMore: boolean;
+        events: string[];
+    };
+    standings(): {
+        deckPersonas: {
+            publicId: string;
+            deckName: string;
+            persona: string;
+            games: number;
+            wins: number;
+            losses: number;
+            draws: number;
+            winRate: number;
+        }[];
+        decks: any[];
+        personas: any[];
+    };
+    dailyGame(input: {
+        confirmed: true;
+        seed?: number;
+        timeoutSeconds?: number;
+    }): Promise<import("./types.js").SimulationRun>;
     status(): {
         builtDecks: number;
         forge: {

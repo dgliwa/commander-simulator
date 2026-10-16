@@ -88,6 +88,24 @@ export default defineToolPlugin({
             execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.simulate(input)); },
         }),
         tool({
+            name: "commander_daily_game",
+            description: "Select four distinct built decks, shuffle the four Forge personas one per deck, update the reusable Daily Commander Game pod, and run one durably logged game. Requires explicit confirmation.",
+            parameters: Type.Object({ confirmed: Type.Literal(true), seed: Type.Optional(Type.Integer({ minimum: 0, maximum: 2_147_483_647 })), timeoutSeconds: Type.Optional(Type.Integer({ minimum: 10, maximum: 300, default: 180 })) }, { additionalProperties: false }),
+            execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.dailyGame(input)); },
+        }),
+        tool({
+            name: "commander_run_log",
+            description: "Read a bounded page of meaningful turn, spell, combat, damage, life, zone-change, and outcome events from an owner-only full Forge game log.",
+            parameters: Type.Object({ runId: id, offset: Type.Optional(Type.Integer({ minimum: 0, default: 0 })), limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 500, default: 300 })) }, { additionalProperties: false }),
+            execute: async ({ runId, offset, limit }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.runLog(runId, offset, limit)); },
+        }),
+        tool({
+            name: "commander_standings",
+            description: "Summarize completed-game wins, losses, draws, and win rates by deck, persona, and deck-persona pairing.",
+            parameters: Type.Object({}, { additionalProperties: false }),
+            execute: async (_input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.standings()); },
+        }),
+        tool({
             name: "commander_simulation_status",
             description: "Get one durable simulation run or list recent runs.",
             parameters: Type.Object({ runId: Type.Optional(id), limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 25 })) }, { additionalProperties: false }),

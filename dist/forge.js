@@ -43,7 +43,6 @@ export async function runForge(paths, participants, games, seed, timeoutSeconds,
         String(seed),
         "-a",
         ...participants.map(player => player.persona),
-        "-q",
         "-c",
         String(timeoutSeconds),
     ];

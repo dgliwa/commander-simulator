@@ -12,7 +12,10 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - 1-10 games per tool invocation
 - Reproducible RNG seeds
 - Bounded per-game and whole-process timeouts
-- Per-game winner, turn count, duration, and owner-only raw logs
+- Per-game winner, turn count, duration, and owner-only full move logs
+- Bounded event-log reading for storytelling and review
+- Durable standings by deck, persona, and deck-persona pairing
+- Deterministic daily four-deck selection with each persona assigned once
 - Basic deck-count and transformed-card-name compatibility checks
 
 Forge personas are heuristic profiles, not language-model roleplay personas. Richer political and strategic personas remain future work.
@@ -28,6 +31,9 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 - `commander_pod_delete`
 - `commander_pod_status`
 - `commander_simulate`
+- `commander_daily_game`
+- `commander_run_log`
+- `commander_standings`
 - `commander_simulation_status`
 
 ## Runtime

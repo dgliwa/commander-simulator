@@ -183,6 +183,44 @@ export class SimulatorDatabase {
     };
   }
 
+  standings() {
+    const rows = this.db.prepare(`
+      WITH participants AS (
+        SELECT r.id AS run_id,
+          json_extract(p.value,'$.publicId') AS public_id,
+          json_extract(p.value,'$.name') AS deck_name,
+          json_extract(p.value,'$.persona') AS persona
+        FROM simulation_runs r,json_each(r.participants_json) p
+        WHERE r.status IN ('completed','completed_with_errors')
+      )
+      SELECT p.public_id,p.deck_name,p.persona,
+        COUNT(*) AS games,
+        SUM(CASE WHEN g.winner_public_id=p.public_id THEN 1 ELSE 0 END) AS wins,
+        SUM(CASE WHEN g.status='draw' THEN 1 ELSE 0 END) AS draws
+      FROM participants p
+      JOIN simulation_games g ON g.run_id=p.run_id
+      WHERE g.status IN ('completed','draw')
+      GROUP BY p.public_id,p.deck_name,p.persona
+      ORDER BY wins DESC,games DESC,p.deck_name,p.persona
+    `).all() as Row[];
+    const deckPersonas = rows.map(row => {
+      const games = Number(row.games);
+      const wins = Number(row.wins);
+      const draws = Number(row.draws);
+      return {
+        publicId: String(row.public_id),
+        deckName: String(row.deck_name),
+        persona: String(row.persona),
+        games,
+        wins,
+        losses: games - wins - draws,
+        draws,
+        winRate: games ? wins / games : 0,
+      };
+    });
+    return { deckPersonas };
+  }
+
   summary() {
     const row = this.db.prepare(`
       SELECT (SELECT count(*) FROM pods) AS pods,
