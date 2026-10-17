@@ -12,17 +12,25 @@ export function validateComicInput(input) {
         throw new Error("story.personaDirections must contain 2-8 participants.");
     }
     const deckNames = new Set();
+    const commanderNames = new Set();
     for (const direction of input.story.personaDirections) {
         safeText(direction.deckName, 1, 300, "persona deckName");
-        safeText(direction.role, 3, 500, `${direction.deckName} role`);
-        safeText(direction.voice, 3, 500, `${direction.deckName} voice`);
-        const key = direction.deckName.trim().toLocaleLowerCase();
-        if (deckNames.has(key))
-            throw new Error(`Duplicate persona direction for ${direction.deckName}.`);
-        deckNames.add(key);
+        safeText(direction.commanderName, 1, 300, "persona commanderName");
+        safeText(direction.role, 3, 500, `${direction.commanderName} role`);
+        safeText(direction.voice, 3, 500, `${direction.commanderName} voice`);
+        const deckKey = direction.deckName.trim().toLocaleLowerCase();
+        if (deckNames.has(deckKey))
+            throw new Error(`Duplicate persona direction for deck ${direction.deckName}.`);
+        deckNames.add(deckKey);
+        const commanderKey = direction.commanderName.trim().toLocaleLowerCase();
+        if (commanderNames.has(commanderKey)) {
+            throw new Error(`Duplicate persona direction for commander ${direction.commanderName}.`);
+        }
+        commanderNames.add(commanderKey);
     }
-    if (input.pages.length < 3 || input.pages.length > 4)
+    if (input.pages.length < 3 || input.pages.length > 4) {
         throw new Error("Comic publication requires 3-4 pages.");
+    }
     const pageNumbers = new Set();
     let dialogueCount = 0;
     for (const page of input.pages) {
@@ -39,10 +47,12 @@ export function validateComicInput(input) {
         }
         for (const [index, panel] of page.panels.entries()) {
             safeText(panel.visual, 20, 3_000, `page ${page.pageNumber} panel ${index + 1} visual`);
-            if (panel.caption !== undefined)
+            if (panel.caption !== undefined) {
                 safeText(panel.caption, 1, 300, `page ${page.pageNumber} panel ${index + 1} caption`);
-            if (panel.dialogue.length > 2)
+            }
+            if (panel.dialogue.length > 2) {
                 throw new Error(`Page ${page.pageNumber} panel ${index + 1} may contain at most two dialogue lines.`);
+            }
             for (const dialogue of panel.dialogue) {
                 safeText(dialogue.speaker, 1, 100, `page ${page.pageNumber} panel ${index + 1} speaker`);
                 safeText(dialogue.text, 1, 120, `page ${page.pageNumber} panel ${index + 1} dialogue`);
@@ -53,10 +63,11 @@ export function validateComicInput(input) {
     if (dialogueCount < input.pages.length) {
         throw new Error("The comic must average at least one dialogue line per page.");
     }
+    rejectDeckNamesAsCharacters(input);
 }
 export function composePagePrompt(input, page) {
     const personaDirections = input.story.personaDirections
-        .map(direction => `- ${direction.deckName} / ${direction.persona}: ${direction.role}. Voice: ${direction.voice}`)
+        .map(direction => `- ${direction.commanderName} / ${direction.persona}: ${direction.role}. Voice: ${direction.voice}`)
         .join("\n");
     const panels = page.panels.map((panel, index) => {
         const caption = panel.caption ? ` Caption exactly: “${panel.caption}”` : "";
@@ -67,13 +78,15 @@ export function composePagePrompt(input, page) {
     }).join("\n");
     return [
         "Create an ORIGINAL high-end American superhero/fantasy comic page in a portrait 2:3 layout.",
-        "Use confident clean ink, cinematic painterly color, expressive faces, readable silhouettes, clean gutters, and a natural reading order.",
+        "Use confident clean ink, cinematic painterly color, expressive faces, readable silhouettes, clean gutters, and natural reading order.",
         "Do not reproduce Magic card frames, logos, existing card illustrations, or existing comic art.",
-        "Render only the exact short captions and dialogue supplied below. Do not add life-total boxes, game UI, rules text, or unrequested lettering.",
+        "The commanders are the acting characters. Never portray or name a deck title as if it were a person.",
+        "Use only understated, story-natural card-game nods when supported by the panel: tapping or untapping through pose and motion, gathering or spending mana, casting, summoning, the graveyard, exile, or returning to command. Keep them cheeky and subtle; never explain rules or turn the scene into a game diagram.",
+        "Render only the exact short captions and dialogue supplied below. Do not add life-total boxes, game UI, score numbers, rules text, mana symbols, phase labels, or unrequested lettering.",
         `Series title: ${input.story.title}`,
         `Premise: ${input.story.premise}`,
         `Dramatic question: ${input.story.dramaticQuestion}`,
-        "Recurring cast and persona direction:",
+        "Recurring commanders and persona direction:",
         personaDirections,
         "Visual continuity guide:",
         input.continuityGuide,
@@ -81,8 +94,34 @@ export function composePagePrompt(input, page) {
         `Story beat: ${page.storyBeat}`,
         `Use exactly ${page.panels.length} panels:`,
         panels,
-        "Preserve factual actions and outcomes. Dialogue may dramatize intent and emotion but must not invent unlogged spells, deals, eliminations, or winners.",
+        "Preserve factual actions and outcomes. Dialogue may dramatize intent and emotion but must not invent unlogged spells, deals, eliminations, winners, or unsupported card-game mechanics. Use commander names—not deck names—for agency, captions, and dialogue attribution.",
     ].join("\n\n");
+}
+function rejectDeckNamesAsCharacters(input) {
+    const narrativeText = [
+        input.continuityGuide,
+        input.story.premise,
+        input.story.dramaticQuestion,
+        ...input.pages.flatMap(page => [
+            page.title,
+            page.storyBeat,
+            ...page.panels.flatMap(panel => [
+                panel.visual,
+                panel.caption ?? "",
+                ...panel.dialogue.flatMap(dialogue => [dialogue.speaker, dialogue.text]),
+            ]),
+        ]),
+    ].join("\n").toLocaleLowerCase();
+    for (const direction of input.story.personaDirections) {
+        const deckName = direction.deckName.trim().toLocaleLowerCase();
+        const commanderName = direction.commanderName.trim().toLocaleLowerCase();
+        if (deckName === commanderName)
+            continue;
+        const withoutCommanderReferences = narrativeText.replaceAll(commanderName, "");
+        if (withoutCommanderReferences.includes(deckName)) {
+            throw new Error(`Comic narrative must use commander ${direction.commanderName}, not deck name ${direction.deckName}, as the acting character.`);
+        }
+    }
 }
 function safeText(value, minimum, maximum, label) {
     const text = value?.trim();

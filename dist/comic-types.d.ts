@@ -15,6 +15,7 @@ export interface ComicPageInput {
 }
 export interface ComicPersonaDirection {
     deckName: string;
+    commanderName: string;
     persona: "Default" | "Cautious" | "Reckless" | "Experimental";
     role: string;
     voice: string;

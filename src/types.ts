@@ -51,7 +51,7 @@ export interface SimulationRun {
   seed: number;
   timeoutSeconds: number;
   status: "running" | "completed" | "completed_with_errors" | "failed";
-  participants: Array<PodParticipant & { name: string }>;
+  participants: Array<PodParticipant & { name: string; commanderNames: string[] }>;
   games: SimulationGame[];
   winnerCounts: Record<string, number>;
   draws: number;

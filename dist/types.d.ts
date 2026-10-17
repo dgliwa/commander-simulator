@@ -47,6 +47,7 @@ export interface SimulationRun {
     status: "running" | "completed" | "completed_with_errors" | "failed";
     participants: Array<PodParticipant & {
         name: string;
+        commanderNames: string[];
     }>;
     games: SimulationGame[];
     winnerCounts: Record<string, number>;

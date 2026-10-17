@@ -18,6 +18,7 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - Deterministic daily four-deck selection with each persona assigned once
 - Deterministic sequential comic rendering through the headless OpenClaw image CLI
 - Resumable page generation with validated owner-only PNGs and a durable prompt manifest
+- Commander-led comic narration with subtle in-world tapping, mana, casting, graveyard, exile, and command references—without scoreboards or game UI
 - Direct summary-and-image delivery to a fixed configured Discord channel
 - Basic deck-count and transformed-card-name compatibility checks
 

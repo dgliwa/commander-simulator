@@ -88,8 +88,17 @@ describe("CommanderSimulatorService", () => {
       const pod = service.createPod({ name: "Test Pod", participants: [{ publicId: "deck-a" }, { publicId: "deck-b", persona: "Reckless" }] });
       const run = await service.simulate({ podId: pod.id, games: 1, seed: 42, timeoutSeconds: 30, confirmed: true });
       expect(run.status).toBe("completed");
+      expect(run.participants).toEqual(expect.arrayContaining([
+        expect.objectContaining({ publicId: "deck-a", commanderNames: ["Alpha Commander // Back Face"] }),
+        expect.objectContaining({ publicId: "deck-b", commanderNames: ["Beta Commander // Back Face"] }),
+      ]));
       expect(run.games[0]).toMatchObject({ gameNumber: 1, winnerPublicId: "deck-b", turns: 11, durationMs: 1234, status: "completed" });
-      expect(service.runLog(run.id).events).toContain("Add Stack: Ai(2)-Beta cast Heroic Finale");
+      expect(service.runLog(run.id)).toMatchObject({
+        participants: expect.arrayContaining([
+          expect.objectContaining({ deckName: "Alpha", commanderNames: ["Alpha Commander // Back Face"] }),
+        ]),
+        events: expect.arrayContaining(["Add Stack: Ai(2)-Beta cast Heroic Finale"]),
+      });
       expect(service.standings().decks).toEqual(expect.arrayContaining([
         expect.objectContaining({ publicId: "deck-b", wins: 1, games: 1 }),
         expect.objectContaining({ publicId: "deck-a", losses: 1, games: 1 }),

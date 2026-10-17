@@ -66,6 +66,9 @@ export class CommanderSimulatorService {
             persona: item.persona,
             seat: item.seat,
             name: item.name,
+            commanderNames: item.cards
+                .filter(card => card.board === "commanders")
+                .flatMap(card => Array.from({ length: card.quantity }, () => card.name)),
             deck: {
                 publicId: item.publicId,
                 name: item.name,
@@ -91,7 +94,13 @@ export class CommanderSimulatorService {
             requestedGames: games,
             seed,
             timeoutSeconds,
-            participants: participants.map(({ publicId, persona, seat, name }) => ({ publicId, persona, seat, name })),
+            participants: participants.map(({ publicId, persona, seat, name, commanderNames }) => ({
+                publicId,
+                persona,
+                seat,
+                name,
+                commanderNames,
+            })),
             logPath,
         });
         try {
@@ -127,6 +136,14 @@ export class CommanderSimulatorService {
         const safeLimit = integer(limit, 1, 500, "limit");
         return {
             runId: id,
+            participants: run.participants.map(participant => ({
+                deckName: participant.name,
+                commanderNames: participant.commanderNames ?? this.magic.get(participant.publicId).cards
+                    .filter(card => card.board === "commanders")
+                    .flatMap(card => Array.from({ length: card.quantity }, () => card.name)),
+                persona: participant.persona,
+                seat: participant.seat,
+            })),
             totalEvents: events.length,
             offset: safeOffset,
             limit: safeLimit,

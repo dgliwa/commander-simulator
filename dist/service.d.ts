@@ -79,6 +79,12 @@ export declare class CommanderSimulatorService {
     getRun(id: string): import("./types.js").SimulationRun;
     runLog(id: string, offset?: number, limit?: number): {
         runId: string;
+        participants: {
+            deckName: string;
+            commanderNames: string[];
+            persona: "Default" | "Cautious" | "Reckless" | "Experimental";
+            seat: number;
+        }[];
         totalEvents: number;
         offset: number;
         limit: number;

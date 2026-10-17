@@ -25,7 +25,8 @@ const comicPage = Type.Object({
   panels: Type.Array(comicPanel, { minItems: 4, maxItems: 6 }),
 }, { additionalProperties: false });
 const comicPersonaDirection = Type.Object({
-  deckName: Type.String({ minLength: 1, maxLength: 300 }),
+  deckName: Type.String({ minLength: 1, maxLength: 300, description: "Internal deck reference; do not use as an acting character in the comic." }),
+  commanderName: Type.String({ minLength: 1, maxLength: 300, description: "Exact commander name used for comic agency, captions, and dialogue attribution." }),
   persona,
   role: Type.String({ minLength: 3, maxLength: 500 }),
   voice: Type.String({ minLength: 3, maxLength: 500 }),
@@ -141,7 +142,7 @@ export default defineToolPlugin({
     }),
     tool({
       name: "commander_comic_publish",
-      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Before calling, read the full meaningful run log and perform a two-pass adaptation: first establish factual chronology, then create a coherent setup, escalation, reversal, climax, and aftermath. Give every deck a stable recurring identity and persona-influenced voice; use concise dialogue and captions while never inventing unlogged plays or outcomes. Requires explicit confirmation.",
+      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Before calling, read the full meaningful run log and perform a two-pass adaptation: first establish factual chronology, then create a coherent setup, escalation, reversal, climax, and aftermath. Use each commander—not the deck name—as the stable acting character with a persona-influenced voice. Add only subtle, factual card-game nods such as tapping or mana; never add scores, UI, rules text, or invented mechanics. Requires explicit confirmation.",
       parameters: Type.Object({
         confirmed: Type.Literal(true),
         runId: id,

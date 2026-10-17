@@ -40,8 +40,8 @@ function input(): ComicPublishInput {
       premise: "Four rival champions enter a shifting arena, but patient preparation threatens to outlast early aggression.",
       dramaticQuestion: "Can the cautious mage survive long enough to turn the final battle?",
       personaDirections: [
-        { deckName: "Alpha", persona: "Reckless", role: "The aggressive challenger", voice: "Bold, impatient, and provocative" },
-        { deckName: "Beta", persona: "Cautious", role: "The patient defender", voice: "Measured, observant, and concise" },
+        { deckName: "Alpha", commanderName: "Aria, Flame Captain", persona: "Reckless", role: "The aggressive challenger", voice: "Bold, impatient, and provocative" },
+        { deckName: "Beta", commanderName: "Borin, Tide Warden", persona: "Cautious", role: "The patient defender", voice: "Measured, observant, and concise" },
       ],
     },
     pages: [1, 2, 3].map(pageNumber => ({
@@ -51,7 +51,7 @@ function input(): ComicPublishInput {
       panels: [1, 2, 3, 4].map(panel => ({
         visual: `Panel ${panel} shows the recurring champions acting on one recorded battlefield event with clear emotional stakes.`,
         caption: panel === 1 ? `Turning point ${pageNumber}` : undefined,
-        dialogue: panel === 2 ? [{ speaker: "Alpha", text: "Now the field is mine." }] : [],
+        dialogue: panel === 2 ? [{ speaker: "Aria, Flame Captain", text: "Tapped out? How generous." }] : [],
       })),
     })),
   };
@@ -93,12 +93,20 @@ describe("ComicRenderer", () => {
     expect(send.filter(value => value === "--media")).toHaveLength(2);
   });
 
-  test("composes prompts with persona voices and exact dialogue without game UI", () => {
+  test("composes commander-led narrative with subtle game references and without UI", () => {
     const source = input();
     const prompt = composePagePrompt(source, source.pages[0]);
-    expect(prompt).toContain("Alpha / Reckless");
-    expect(prompt).toContain("Alpha: “Now the field is mine.”");
+    expect(prompt).toContain("Aria, Flame Captain / Reckless");
+    expect(prompt).not.toContain("- Alpha / Reckless");
+    expect(prompt).toContain("Aria, Flame Captain: “Tapped out? How generous.”");
+    expect(prompt).toContain("understated, story-natural card-game nods");
     expect(prompt).toContain("Do not add life-total boxes");
+  });
+
+  test("rejects deck names used as acting comic characters", () => {
+    const source = input();
+    source.pages[0].panels[0].dialogue = [{ speaker: "Alpha", text: "I attack." }];
+    expect(() => validateComicInput(source)).toThrow("must use commander Aria, Flame Captain");
   });
 
   test("rejects a fifth comic page", () => {
