@@ -1,4 +1,4 @@
-import { type ComicPublishInput } from "./comic-renderer.js";
+import type { ComicPublishInput } from "./comic-types.js";
 import { SimulatorDatabase } from "./database.js";
 import { MagicDeckSource } from "./magic-source.js";
 import type { SimulatorPaths } from "./paths.js";
@@ -104,22 +104,8 @@ export declare class CommanderSimulatorService {
         seed?: number;
         timeoutSeconds?: number;
     }): Promise<import("./types.js").SimulationRun>;
-    publishComic(input: ComicPublishInput, signal?: AbortSignal): Promise<{
-        runId: string;
-        delivered: boolean;
-        discordTarget: string;
-        rendered: {
-            pageNumber: number;
-            path: string;
-            reused: boolean;
-        }[];
-        failed: {
-            pageNumber: number;
-            error: string;
-        }[];
-        delivery: unknown;
-        manifestPath: string;
-    }>;
+    publishComic(input: ComicPublishInput, signal?: AbortSignal): Record<string, unknown>;
+    comicStatus(runId: string): Record<string, unknown>;
     status(): {
         builtDecks: number;
         forge: {

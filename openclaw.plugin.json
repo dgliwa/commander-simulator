@@ -58,6 +58,7 @@
       "commander_run_log",
       "commander_standings",
       "commander_comic_publish",
+      "commander_comic_status",
       "commander_simulation_status"
     ]
   },

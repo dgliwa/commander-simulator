@@ -38,6 +38,7 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 - `commander_run_log`
 - `commander_standings`
 - `commander_comic_publish`
+- `commander_comic_status`
 - `commander_simulation_status`
 
 ## Runtime
@@ -56,7 +57,7 @@ Plugin data defaults to:
 
 The Magic Workspace registry defaults to `~/.openclaw/plugins/magic-workspace/magic.sqlite`.
 
-Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The renderer calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records an owner-only manifest, and sends the summary plus successful pages only after rendering settles.
+Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The tool validates a structured story plan, panel beats, concise dialogue, persona voices, and a repeated continuity guide, then queues an owner-only detached publisher and returns immediately. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
 
 ## Safety model
 

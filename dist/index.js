@@ -8,9 +8,32 @@ import { FORGE_PERSONAS } from "./types.js";
 const id = Type.String({ minLength: 1, maxLength: 200 });
 const persona = Type.Union(FORGE_PERSONAS.map(value => Type.Literal(value)));
 const participant = Type.Object({ publicId: id, persona: Type.Optional(persona) }, { additionalProperties: false });
+const comicDialogue = Type.Object({
+    speaker: Type.String({ minLength: 1, maxLength: 100 }),
+    text: Type.String({ minLength: 1, maxLength: 120 }),
+}, { additionalProperties: false });
+const comicPanel = Type.Object({
+    visual: Type.String({ minLength: 20, maxLength: 3_000 }),
+    caption: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
+    dialogue: Type.Array(comicDialogue, { maxItems: 2 }),
+}, { additionalProperties: false });
 const comicPage = Type.Object({
     pageNumber: Type.Integer({ minimum: 1, maximum: 5 }),
-    prompt: Type.String({ minLength: 1, maxLength: 30_000 }),
+    title: Type.String({ minLength: 1, maxLength: 200 }),
+    storyBeat: Type.String({ minLength: 20, maxLength: 2_000 }),
+    panels: Type.Array(comicPanel, { minItems: 4, maxItems: 6 }),
+}, { additionalProperties: false });
+const comicPersonaDirection = Type.Object({
+    deckName: Type.String({ minLength: 1, maxLength: 300 }),
+    persona,
+    role: Type.String({ minLength: 3, maxLength: 500 }),
+    voice: Type.String({ minLength: 3, maxLength: 500 }),
+}, { additionalProperties: false });
+const comicStory = Type.Object({
+    title: Type.String({ minLength: 1, maxLength: 300 }),
+    premise: Type.String({ minLength: 20, maxLength: 2_000 }),
+    dramaticQuestion: Type.String({ minLength: 10, maxLength: 1_000 }),
+    personaDirections: Type.Array(comicPersonaDirection, { minItems: 2, maxItems: 8 }),
 }, { additionalProperties: false });
 async function withService(api, config, operation) {
     const stateDir = api.runtime.state.resolveStateDir(process.env);
@@ -116,14 +139,22 @@ export default defineToolPlugin({
         }),
         tool({
             name: "commander_comic_publish",
-            description: "Generate 3-5 comic pages sequentially with the headless image CLI, reuse validated existing pages, and deliver the supplied summary plus successful pages to the configured Discord channel. Requires explicit confirmation.",
+            description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Before calling, read the full meaningful run log and perform a two-pass adaptation: first establish factual chronology, then create a coherent setup, escalation, reversal, climax, and aftermath. Give every deck a stable recurring identity and persona-influenced voice; use concise dialogue and captions while never inventing unlogged plays or outcomes. Requires explicit confirmation.",
             parameters: Type.Object({
                 confirmed: Type.Literal(true),
                 runId: id,
                 summary: Type.String({ minLength: 1, maxLength: 8_000 }),
+                continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
+                story: comicStory,
                 pages: Type.Array(comicPage, { minItems: 3, maxItems: 5 }),
             }, { additionalProperties: false }),
             execute: async (input, config, { api, signal }) => withService(api, config, service => service.publishComic(input, signal)),
+        }),
+        tool({
+            name: "commander_comic_status",
+            description: "Read durable status for a queued, running, completed, partial, or failed comic publication. Use only when the user explicitly asks; normal publication delivers directly without polling.",
+            parameters: Type.Object({ runId: id }, { additionalProperties: false }),
+            execute: async ({ runId }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.comicStatus(runId)); },
         }),
         tool({
             name: "commander_simulation_status",
