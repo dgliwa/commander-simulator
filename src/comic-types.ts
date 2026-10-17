@@ -59,12 +59,12 @@ export function validateComicInput(input: ComicPublishInput): void {
     if (deckNames.has(key)) throw new Error(`Duplicate persona direction for ${direction.deckName}.`);
     deckNames.add(key);
   }
-  if (input.pages.length < 3 || input.pages.length > 5) throw new Error("Comic publication requires 3-5 pages.");
+  if (input.pages.length < 3 || input.pages.length > 4) throw new Error("Comic publication requires 3-4 pages.");
   const pageNumbers = new Set<number>();
   let dialogueCount = 0;
   for (const page of input.pages) {
-    if (!Number.isSafeInteger(page.pageNumber) || page.pageNumber < 1 || page.pageNumber > 5) {
-      throw new Error("pageNumber must be an integer from 1 to 5.");
+    if (!Number.isSafeInteger(page.pageNumber) || page.pageNumber < 1 || page.pageNumber > 4) {
+      throw new Error("pageNumber must be an integer from 1 to 4.");
     }
     if (pageNumbers.has(page.pageNumber)) throw new Error(`Duplicate comic page number ${page.pageNumber}.`);
     pageNumbers.add(page.pageNumber);

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import { ComicPublisher } from "./comic-publisher.js";
 import { ComicRenderer, type CommandRunner } from "./comic-renderer.js";
-import { composePagePrompt, type ComicPublishInput } from "./comic-types.js";
+import { composePagePrompt, type ComicPublishInput, validateComicInput } from "./comic-types.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -99,6 +99,12 @@ describe("ComicRenderer", () => {
     expect(prompt).toContain("Alpha / Reckless");
     expect(prompt).toContain("Alpha: “Now the field is mine.”");
     expect(prompt).toContain("Do not add life-total boxes");
+  });
+
+  test("rejects a fifth comic page", () => {
+    const source = input();
+    source.pages.push({ ...source.pages[0], pageNumber: 4 }, { ...source.pages[0], pageNumber: 5 });
+    expect(() => validateComicInput(source)).toThrow("Comic publication requires 3-4 pages.");
   });
 
   test("queues detached publication immediately and suppresses duplicate launches", () => {

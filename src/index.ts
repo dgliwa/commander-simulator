@@ -19,7 +19,7 @@ const comicPanel = Type.Object({
   dialogue: Type.Array(comicDialogue, { maxItems: 2 }),
 }, { additionalProperties: false });
 const comicPage = Type.Object({
-  pageNumber: Type.Integer({ minimum: 1, maximum: 5 }),
+  pageNumber: Type.Integer({ minimum: 1, maximum: 4 }),
   title: Type.String({ minLength: 1, maxLength: 200 }),
   storyBeat: Type.String({ minLength: 20, maxLength: 2_000 }),
   panels: Type.Array(comicPanel, { minItems: 4, maxItems: 6 }),
@@ -148,7 +148,7 @@ export default defineToolPlugin({
         summary: Type.String({ minLength: 1, maxLength: 8_000 }),
         continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
         story: comicStory,
-        pages: Type.Array(comicPage, { minItems: 3, maxItems: 5 }),
+        pages: Type.Array(comicPage, { minItems: 3, maxItems: 4 }),
       }, { additionalProperties: false }),
       execute: async (input, config, { api, signal }) => withService(api, config, service => service.publishComic(input, signal)),
     }),
