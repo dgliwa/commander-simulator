@@ -15,7 +15,7 @@ const comicDialogue = Type.Object({
 const comicPanel = Type.Object({
     visual: Type.String({ minLength: 20, maxLength: 3_000 }),
     caption: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
-    dialogue: Type.Array(comicDialogue, { maxItems: 2 }),
+    dialogue: Type.Optional(Type.Array(comicDialogue, { maxItems: 2, default: [] })),
 }, { additionalProperties: false });
 const comicPage = Type.Object({
     pageNumber: Type.Integer({ minimum: 1, maximum: 4 }),
@@ -35,6 +35,7 @@ const comicStory = Type.Object({
     premise: Type.String({ minLength: 20, maxLength: 2_000 }),
     dramaticQuestion: Type.String({ minLength: 10, maxLength: 1_000 }),
     personaDirections: Type.Array(comicPersonaDirection, { minItems: 2, maxItems: 8 }),
+    pages: Type.Optional(Type.Array(comicPage, { minItems: 3, maxItems: 4, description: "Accepted for recovery from older nested comic plans; top-level pages are preferred." })),
 }, { additionalProperties: false });
 async function withService(api, config, operation) {
     const stateDir = api.runtime.state.resolveStateDir(process.env);
@@ -147,7 +148,7 @@ export default defineToolPlugin({
                 summary: Type.String({ minLength: 1, maxLength: 8_000 }),
                 continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
                 story: comicStory,
-                pages: Type.Array(comicPage, { minItems: 3, maxItems: 4 }),
+                pages: Type.Optional(Type.Array(comicPage, { minItems: 3, maxItems: 4 })),
             }, { additionalProperties: false }),
             execute: async (input, config, { api, signal }) => withService(api, config, service => service.publishComic(input, signal)),
         }),

@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { ComicPublisher } from "./comic-publisher.js";
-import type { ComicPublishInput } from "./comic-types.js";
+import type { ComicPublishDraft } from "./comic-types.js";
 import { SimulatorDatabase } from "./database.js";
 import { runForge } from "./forge.js";
 import { MagicDeckSource } from "./magic-source.js";
@@ -182,7 +182,7 @@ export class CommanderSimulatorService {
     return this.simulate({ podId: pod.id, games: 1, seed, timeoutSeconds: input.timeoutSeconds ?? 180, confirmed: true });
   }
 
-  publishComic(input: ComicPublishInput, signal?: AbortSignal) {
+  publishComic(input: ComicPublishDraft, signal?: AbortSignal) {
     const run = this.database.getRun(input.runId);
     if (run.status !== "completed") throw new Error("Comic publication requires a completed simulation run.");
     const publisher = new ComicPublisher(

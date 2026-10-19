@@ -4,7 +4,13 @@ import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import { ComicPublisher } from "./comic-publisher.js";
 import { ComicRenderer, type CommandRunner } from "./comic-renderer.js";
-import { composePagePrompt, type ComicPublishInput, validateComicInput } from "./comic-types.js";
+import {
+  composePagePrompt,
+  normalizeComicInput,
+  selectComicStyle,
+  type ComicPublishInput,
+  validateComicInput,
+} from "./comic-types.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -64,12 +70,13 @@ describe("ComicRenderer", () => {
     expect(result.rendered).toHaveLength(3);
     expect(result.failed).toEqual([]);
     expect(calls.map(call => call.slice(0, 3))).toEqual([
+      ["message", "send", "--channel"],
       ["infer", "image", "generate"],
       ["infer", "image", "generate"],
       ["infer", "image", "generate"],
       ["message", "send", "--channel"],
     ]);
-    expect(calls[3].filter(value => value === "--media")).toHaveLength(3);
+    expect(calls[4].filter(value => value === "--media")).toHaveLength(3);
     expect(JSON.parse(readFileSync(join(root, input().runId, "manifest.json"), "utf8")).status).toBe("completed");
   });
 
@@ -79,8 +86,9 @@ describe("ComicRenderer", () => {
     calls.length = 0;
     const result = await renderer.publish(input());
     expect(result.rendered.every((page: any) => page.reused)).toBe(true);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
     expect(calls[0].slice(0, 2)).toEqual(["message", "send"]);
+    expect(calls[1].slice(0, 2)).toEqual(["message", "send"]);
   });
 
   test("continues after one page failure and reports a partial package", async () => {
@@ -88,6 +96,7 @@ describe("ComicRenderer", () => {
     const result = await renderer.publish(input());
     expect(result.rendered.map((page: any) => page.pageNumber)).toEqual([1, 3]);
     expect(result.failed).toEqual([{ pageNumber: 2, error: "provider failed" }]);
+    expect(calls.filter(call => call[0] === "infer" && call.some(value => value.endsWith("page-2.png")))).toHaveLength(2);
     const send = calls.at(-1)!;
     expect(send[send.indexOf("--message") + 1]).toContain("page 2 failed");
     expect(send.filter(value => value === "--media")).toHaveLength(2);
@@ -100,7 +109,7 @@ describe("ComicRenderer", () => {
     expect(prompt).not.toContain("- Alpha / Reckless");
     expect(prompt).toContain("Aria, Flame Captain: “Tapped out? How generous.”");
     expect(prompt).toContain("understated, story-natural card-game nods");
-    expect(prompt).toContain("Do not add life-total boxes");
+    expect(prompt).toContain("Never show game UI, life totals");
   });
 
   test("rejects deck names used as acting comic characters", () => {
@@ -109,10 +118,32 @@ describe("ComicRenderer", () => {
     expect(() => validateComicInput(source)).toThrow("must use commander Aria, Flame Captain");
   });
 
+  test("normalizes nested pages and missing dialogue before validation", () => {
+    const source = input();
+    const draft: any = {
+      ...source,
+      story: { ...source.story, pages: source.pages.map(page => ({
+        ...page,
+        panels: page.panels.map(({ dialogue: _dialogue, ...panel }) => panel),
+      })) },
+    };
+    delete draft.pages;
+    const normalized = normalizeComicInput(draft);
+    expect(normalized.story).not.toHaveProperty("pages");
+    expect(normalized.pages[0].panels[0].dialogue).toEqual([]);
+    expect(() => validateComicInput(normalized)).toThrow("average at least one dialogue line per page");
+  });
+
+  test("selects a stable rotating art direction per run", () => {
+    const first = selectComicStyle(input().runId);
+    expect(selectComicStyle(input().runId)).toEqual(first);
+    expect(composePagePrompt(input(), input().pages[0])).toContain(`DAILY ART DIRECTION — ${first.id}`);
+  });
+
   test("rejects a fifth comic page", () => {
     const source = input();
     source.pages.push({ ...source.pages[0], pageNumber: 4 }, { ...source.pages[0], pageNumber: 5 });
-    expect(() => validateComicInput(source)).toThrow("Comic publication requires 3-4 pages.");
+    expect(() => validateComicInput(source)).toThrow("Comic must contain 3-4 pages.");
   });
 
   test("queues detached publication immediately and suppresses duplicate launches", () => {

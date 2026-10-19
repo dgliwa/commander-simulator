@@ -10,12 +10,16 @@ try {
   const renderer = new ComicRenderer(request.comicRoot, request.discordTarget, request.openclawCommand);
   await renderer.publish(request.input);
 } catch (error) {
-  let manifestPath: string | undefined;
   try {
     const request = readWorkerRequest(requestPath);
-    manifestPath = join(resolve(request.comicRoot, request.input.runId), "manifest.json");
+    const manifestPath = join(resolve(request.comicRoot, request.input.runId), "manifest.json");
     const publisher = new ComicPublisher(request.comicRoot, request.discordTarget, request.openclawCommand);
     const current = publisher.status(request.input.runId);
+    const renderer = new ComicRenderer(request.comicRoot, request.discordTarget, request.openclawCommand);
+    const failureDelivery = await renderer.reportFailure(request.input, error).catch((deliveryError) => ({
+      status: "failed",
+      error: deliveryError instanceof Error ? deliveryError.message : String(deliveryError),
+    }));
     writeManifest(manifestPath, {
       ...current,
       status: "failed",
@@ -23,6 +27,7 @@ try {
       storyTitle: request.input.story.title,
       pageCount: request.input.pages.length,
       error: error instanceof Error ? error.message : String(error),
+      failureDelivery,
       completedAt: new Date().toISOString(),
     });
   } catch {

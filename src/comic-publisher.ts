@@ -2,7 +2,13 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
-import { type ComicPublishInput, validateComicInput } from "./comic-types.js";
+import {
+  type ComicPublishDraft,
+  type ComicPublishInput,
+  normalizeComicInput,
+  selectComicStyle,
+  validateComicInput,
+} from "./comic-types.js";
 import { writeManifest } from "./comic-renderer.js";
 
 export interface WorkerRequest {
@@ -22,7 +28,8 @@ export class ComicPublisher {
     private readonly launchWorker: ComicWorkerLauncher = launchDetachedWorker,
   ) {}
 
-  enqueue(input: ComicPublishInput, signal?: AbortSignal): Record<string, unknown> {
+  enqueue(draft: ComicPublishDraft, signal?: AbortSignal): Record<string, unknown> {
+    const input = normalizeComicInput(draft);
     validateComicInput(input);
     validateDiscordTarget(this.discordTarget);
     signal?.throwIfAborted();
@@ -30,10 +37,7 @@ export class ComicPublisher {
     mkdirSync(runDirectory, { recursive: true, mode: 0o700 });
     const manifestPath = join(runDirectory, "manifest.json");
     const current = readJson(manifestPath);
-    if (current?.status === "queued" || current?.status === "running") {
-      return statusResponse(manifestPath, current, false);
-    }
-    if (current?.status === "completed") {
+    if (current?.status === "queued" || current?.status === "running" || current?.status === "completed") {
       return statusResponse(manifestPath, current, false);
     }
     const requestPath = join(runDirectory, "request.json");
@@ -46,36 +50,42 @@ export class ComicPublisher {
     };
     writeOwnerOnly(requestPath, request);
     const queuedAt = new Date().toISOString();
+    const style = selectComicStyle(input.runId);
     writeManifest(manifestPath, {
       status: "queued",
       queuedAt,
       runId: input.runId,
       storyTitle: input.story.title,
       pageCount: input.pages.length,
-      rendered: [],
-      failed: [],
+      style,
     });
-    const pid = this.launchWorker(requestPath, logPath);
-    writeManifest(manifestPath, {
-      status: "queued",
-      queuedAt,
-      runId: input.runId,
-      storyTitle: input.story.title,
-      pageCount: input.pages.length,
-      workerPid: pid,
-      rendered: [],
-      failed: [],
-    });
-    return {
-      accepted: true,
-      status: "queued",
-      runId: input.runId,
-      storyTitle: input.story.title,
-      pageCount: input.pages.length,
-      workerPid: pid,
-      manifestPath,
-      message: "Comic publication is running independently. Do not poll or regenerate pages; completion or partial results will be delivered directly to the configured Discord channel.",
-    };
+    try {
+      const workerPid = this.launchWorker(requestPath, logPath);
+      const queued = {
+        status: "queued",
+        queuedAt,
+        runId: input.runId,
+        storyTitle: input.story.title,
+        pageCount: input.pages.length,
+        style,
+        workerPid,
+      };
+      writeManifest(manifestPath, queued);
+      return statusResponse(manifestPath, queued, true);
+    } catch (error) {
+      const failed = {
+        status: "failed",
+        queuedAt,
+        completedAt: new Date().toISOString(),
+        runId: input.runId,
+        storyTitle: input.story.title,
+        pageCount: input.pages.length,
+        style,
+        error: error instanceof Error ? error.message : String(error),
+      };
+      writeManifest(manifestPath, failed);
+      throw error;
+    }
   }
 
   status(runId: string): Record<string, unknown> {
@@ -89,7 +99,7 @@ export class ComicPublisher {
 
 export function readWorkerRequest(path: string): WorkerRequest {
   const request = readJson(path) as WorkerRequest | undefined;
-  if (!request) throw new Error("Comic worker request is missing or invalid.");
+  if (!request) throw new Error("Comic worker request missing or invalid.");
   validateComicInput(request.input);
   validateDiscordTarget(request.discordTarget);
   return request;
@@ -106,7 +116,7 @@ function launchDetachedWorker(requestPath: string, logPath: string): number {
       windowsHide: true,
     });
     child.unref();
-    if (!child.pid) throw new Error("Comic publisher worker did not return a process ID.");
+    if (!child.pid) throw new Error("Comic publisher worker did not return process ID.");
     return child.pid;
   } finally {
     closeSync(logFd);
@@ -139,6 +149,7 @@ function statusResponse(manifestPath: string, manifest: Record<string, any>, acc
     status: manifest.status ?? "unknown",
     storyTitle: manifest.storyTitle ?? manifest.input?.story?.title,
     pageCount: manifest.pageCount ?? manifest.input?.pages?.length,
+    style: manifest.style,
     workerPid: manifest.workerPid,
     rendered: manifest.rendered ?? [],
     failed: manifest.failed ?? [],

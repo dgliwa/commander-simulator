@@ -1,4 +1,4 @@
-import { type ComicPublishInput } from "./comic-types.js";
+import { type ComicPublishDraft, type ComicPublishInput } from "./comic-types.js";
 export interface WorkerRequest {
     comicRoot: string;
     discordTarget: string;
@@ -12,7 +12,7 @@ export declare class ComicPublisher {
     private readonly openclawCommand;
     private readonly launchWorker;
     constructor(comicRoot: string, discordTarget: string, openclawCommand?: string, launchWorker?: ComicWorkerLauncher);
-    enqueue(input: ComicPublishInput, signal?: AbortSignal): Record<string, unknown>;
+    enqueue(draft: ComicPublishDraft, signal?: AbortSignal): Record<string, unknown>;
     status(runId: string): Record<string, unknown>;
 }
 export declare function readWorkerRequest(path: string): WorkerRequest;
