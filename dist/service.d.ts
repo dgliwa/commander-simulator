@@ -1,4 +1,4 @@
-import type { ComicPublishInput } from "./comic-types.js";
+import type { ComicPublishDraft } from "./comic-types.js";
 import { SimulatorDatabase } from "./database.js";
 import { MagicDeckSource } from "./magic-source.js";
 import type { SimulatorPaths } from "./paths.js";
@@ -110,7 +110,7 @@ export declare class CommanderSimulatorService {
         seed?: number;
         timeoutSeconds?: number;
     }): Promise<import("./types.js").SimulationRun>;
-    publishComic(input: ComicPublishInput, signal?: AbortSignal): Record<string, unknown>;
+    publishComic(input: ComicPublishDraft, signal?: AbortSignal): Record<string, unknown>;
     comicStatus(runId: string): Record<string, unknown>;
     status(): {
         builtDecks: number;

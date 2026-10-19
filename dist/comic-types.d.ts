@@ -34,5 +34,27 @@ export interface ComicPublishInput {
     story: ComicStoryPlan;
     pages: ComicPageInput[];
 }
+export interface ComicPublishDraft extends Omit<ComicPublishInput, "story" | "pages"> {
+    story: ComicStoryPlan & {
+        pages?: Array<Omit<ComicPageInput, "panels"> & {
+            panels: Array<Omit<ComicPanelInput, "dialogue"> & {
+                dialogue?: ComicDialogue[];
+            }>;
+        }>;
+    };
+    pages?: Array<Omit<ComicPageInput, "panels"> & {
+        panels: Array<Omit<ComicPanelInput, "dialogue"> & {
+            dialogue?: ComicDialogue[];
+        }>;
+    }>;
+}
+export interface ComicStyleProfile {
+    id: string;
+    visualLanguage: string;
+    layout: string;
+    colorScript: string;
+}
+export declare function normalizeComicInput(input: ComicPublishDraft): ComicPublishInput;
+export declare function selectComicStyle(runId: string): ComicStyleProfile;
 export declare function validateComicInput(input: ComicPublishInput): void;
-export declare function composePagePrompt(input: ComicPublishInput, page: ComicPageInput): string;
+export declare function composePagePrompt(input: ComicPublishInput, page: ComicPageInput, style?: ComicStyleProfile): string;

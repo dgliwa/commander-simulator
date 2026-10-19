@@ -15,6 +15,8 @@ export declare class ComicRenderer {
     private readonly runCommand;
     constructor(comicRoot: string, discordTarget: string, openclawCommand?: string, runCommand?: CommandRunner);
     publish(input: ComicPublishInput): Promise<Record<string, unknown>>;
+    reportFailure(input: ComicPublishInput, error: unknown): Promise<Record<string, unknown>>;
+    private sendMessage;
 }
 export declare function executeCommand(command: string, args: string[], options: {
     timeoutMs: number;
