@@ -7,6 +7,7 @@ import { ComicRenderer, type CommandRunner } from "./comic-renderer.js";
 import {
   composePagePrompt,
   normalizeComicInput,
+  selectComicBackground,
   selectComicStyle,
   type ComicPublishInput,
   validateComicInput,
@@ -54,8 +55,11 @@ function input(): ComicPublishInput {
       pageNumber,
       title: `Page ${pageNumber}`,
       storyBeat: `This page advances the conflict through a factual turning point number ${pageNumber}.`,
+      setting: `Distinct battlefield location ${pageNumber} with a changed horizon, weather, and terrain state.`,
+      backgroundElements: [`landmark ${pageNumber}`, `weather state ${pageNumber}`],
       panels: [1, 2, 3, 4].map(panel => ({
         visual: `Panel ${panel} shows the recurring champions acting on one recorded battlefield event with clear emotional stakes.`,
+        gameplayCue: panel === 1 ? `Aria visibly spends gathered fire mana to cast the recorded spell on turn ${pageNumber}.` : undefined,
         caption: panel === 1 ? `Turning point ${pageNumber}` : undefined,
         dialogue: panel === 2 ? [{ speaker: "Aria, Flame Captain", text: "Tapped out? How generous." }] : [],
       })),
@@ -108,7 +112,9 @@ describe("ComicRenderer", () => {
     expect(prompt).toContain("Aria, Flame Captain / Reckless");
     expect(prompt).not.toContain("- Alpha / Reckless");
     expect(prompt).toContain("Aria, Flame Captain: “Tapped out? How generous.”");
-    expect(prompt).toContain("understated, story-natural card-game nods");
+    expect(prompt).toContain("FACTUAL GAMEPLAY ANCHORS FOR THIS PAGE");
+    expect(prompt).toContain("Aria visibly spends gathered fire mana");
+    expect(prompt).toContain("REQUIRED BACKGROUND ELEMENTS");
     expect(prompt).toContain("Never show game UI, life totals");
   });
 
@@ -136,8 +142,22 @@ describe("ComicRenderer", () => {
 
   test("selects a stable rotating art direction per run", () => {
     const first = selectComicStyle(input().runId);
+    const background = selectComicBackground(input().runId);
     expect(selectComicStyle(input().runId)).toEqual(first);
-    expect(composePagePrompt(input(), input().pages[0])).toContain(`DAILY ART DIRECTION — ${first.id}`);
+    expect(selectComicBackground(input().runId)).toEqual(background);
+    const prompt = composePagePrompt(input(), input().pages[0]);
+    expect(prompt).toContain(`DAILY MEDIUM AND STYLE — ${first.id}`);
+    expect(prompt).toContain(`BACKGROUND STRATEGY — ${background.id}`);
+  });
+
+  test("requires factual gameplay cues and varied page settings", () => {
+    const missingCue = input();
+    missingCue.pages[0].panels.forEach(panel => { delete panel.gameplayCue; });
+    expect(() => validateComicInput(missingCue)).toThrow("at least one factual gameplayCue");
+
+    const repeatedSetting = input();
+    repeatedSetting.pages.forEach(page => { page.setting = "The same unchanged generic battlefield location on every page."; });
+    expect(() => validateComicInput(repeatedSetting)).toThrow("at least two visibly distinct page settings");
   });
 
   test("rejects a fifth comic page", () => {

@@ -4,6 +4,7 @@ export interface ComicDialogue {
 }
 export interface ComicPanelInput {
     visual: string;
+    gameplayCue?: string;
     caption?: string;
     dialogue: ComicDialogue[];
 }
@@ -11,6 +12,8 @@ export interface ComicPageInput {
     pageNumber: number;
     title: string;
     storyBeat: string;
+    setting: string;
+    backgroundElements: string[];
     panels: ComicPanelInput[];
 }
 export interface ComicPersonaDirection {
@@ -34,27 +37,35 @@ export interface ComicPublishInput {
     story: ComicStoryPlan;
     pages: ComicPageInput[];
 }
+type ComicPanelDraft = Omit<ComicPanelInput, "dialogue"> & {
+    dialogue?: ComicDialogue[];
+};
+type ComicPageDraft = Omit<ComicPageInput, "setting" | "backgroundElements" | "panels"> & {
+    setting?: string;
+    backgroundElements?: string[];
+    panels: ComicPanelDraft[];
+};
 export interface ComicPublishDraft extends Omit<ComicPublishInput, "story" | "pages"> {
     story: ComicStoryPlan & {
-        pages?: Array<Omit<ComicPageInput, "panels"> & {
-            panels: Array<Omit<ComicPanelInput, "dialogue"> & {
-                dialogue?: ComicDialogue[];
-            }>;
-        }>;
+        pages?: ComicPageDraft[];
     };
-    pages?: Array<Omit<ComicPageInput, "panels"> & {
-        panels: Array<Omit<ComicPanelInput, "dialogue"> & {
-            dialogue?: ComicDialogue[];
-        }>;
-    }>;
+    pages?: ComicPageDraft[];
 }
 export interface ComicStyleProfile {
     id: string;
     visualLanguage: string;
+    surface: string;
     layout: string;
     colorScript: string;
 }
+export interface ComicBackgroundProfile {
+    id: string;
+    direction: string;
+    composition: string;
+}
 export declare function normalizeComicInput(input: ComicPublishDraft): ComicPublishInput;
 export declare function selectComicStyle(runId: string): ComicStyleProfile;
+export declare function selectComicBackground(runId: string): ComicBackgroundProfile;
 export declare function validateComicInput(input: ComicPublishInput): void;
-export declare function composePagePrompt(input: ComicPublishInput, page: ComicPageInput, style?: ComicStyleProfile): string;
+export declare function composePagePrompt(input: ComicPublishInput, page: ComicPageInput, style?: ComicStyleProfile, background?: ComicBackgroundProfile): string;
+export {};
