@@ -15,6 +15,11 @@ const comicDialogue = Type.Object({
 }, { additionalProperties: false });
 const comicPanel = Type.Object({
   visual: Type.String({ minLength: 20, maxLength: 3_000 }),
+  gameplayCue: Type.Optional(Type.String({
+    minLength: 10,
+    maxLength: 500,
+    description: "A factual event from the persisted game log translated into a clearly visible diegetic action. At least one panel per page must supply this.",
+  })),
   caption: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
   dialogue: Type.Optional(Type.Array(comicDialogue, { maxItems: 2, default: [] })),
 }, { additionalProperties: false });
@@ -22,6 +27,16 @@ const comicPage = Type.Object({
   pageNumber: Type.Integer({ minimum: 1, maximum: 4 }),
   title: Type.String({ minLength: 1, maxLength: 200 }),
   storyBeat: Type.String({ minLength: 20, maxLength: 2_000 }),
+  setting: Type.String({
+    minLength: 20,
+    maxLength: 1_000,
+    description: "A concrete, visually distinctive setting. Across the comic, use at least two visibly different locations, environmental states, or scales.",
+  }),
+  backgroundElements: Type.Array(Type.String({ minLength: 3, maxLength: 300 }), {
+    minItems: 2,
+    maxItems: 4,
+    description: "Specific landmarks, props, weather, crowds, or environmental changes that must remain visible rather than generic scenery.",
+  }),
   panels: Type.Array(comicPanel, { minItems: 4, maxItems: 6 }),
 }, { additionalProperties: false });
 const comicPersonaDirection = Type.Object({
@@ -143,7 +158,7 @@ export default defineToolPlugin({
     }),
     tool({
       name: "commander_comic_publish",
-      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Before calling, read the full meaningful run log and perform a two-pass adaptation: first establish factual chronology, then create a coherent setup, escalation, reversal, climax, and aftermath. Use each commander—not the deck name—as the stable acting character with a persona-influenced voice. Add only subtle, factual card-game nods such as tapping or mana; never add scores, UI, rules text, or invented mechanics. Requires explicit confirmation.",
+      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Read the full meaningful run log first, establish factual chronology, then adapt setup, escalation, reversal, climax, and aftermath. Use each commander—not the deck name—as a stable acting character. Supply at least one concrete factual gameplayCue per page so major casts, attacks, blocks, removal, sacrifice, recursion, or commander damage remain clearly recognizable as diegetic story actions. Give every page a concrete setting and 2-4 specific background elements, with at least two visibly distinct settings across the comic. Never add scores, UI, rules text, or invented mechanics. Requires explicit confirmation.",
       parameters: Type.Object({
         confirmed: Type.Literal(true),
         runId: id,

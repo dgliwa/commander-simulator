@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
-import { composePagePrompt, selectComicStyle, validateComicInput } from "./comic-types.js";
+import { composePagePrompt, selectComicBackground, selectComicStyle, validateComicInput } from "./comic-types.js";
 const execFileAsync = promisify(execFile);
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 export class ComicRenderer {
@@ -26,15 +26,17 @@ export class ComicRenderer {
         const prior = readManifest(manifestPath);
         const startedAt = new Date().toISOString();
         const style = selectComicStyle(input.runId);
+        const background = selectComicBackground(input.runId);
         const rendered = [];
         const failed = [];
-        const queueReceipt = await this.sendMessage(`🎲 Commander game complete · comic queued\n\n**${input.story.title}**\nRun: \`${input.runId}\`\nArt direction: ${style.id}\nRendering ${input.pages.length} pages independently; completed pages will be reused if recovery is needed.`).catch((error) => ({ status: "failed", error: errorMessage(error) }));
+        const queueReceipt = await this.sendMessage(`🎲 Commander game complete · comic queued\n\n**${input.story.title}**\nRun: \`${input.runId}\`\nArt direction: ${style.id} · ${background.id}\nRendering ${input.pages.length} pages independently; completed pages will be reused if recovery is needed.`).catch((error) => ({ status: "failed", error: errorMessage(error) }));
         writeManifest(manifestPath, {
             ...prior,
             status: "running",
             startedAt,
             input,
             style,
+            background,
             queueReceipt,
             rendered,
             failed,
@@ -43,7 +45,7 @@ export class ComicRenderer {
             const outputPath = join(runDirectory, `page-${page.pageNumber}.png`);
             if (isExpectedPng(outputPath)) {
                 rendered.push({ pageNumber: page.pageNumber, path: outputPath, reused: true });
-                writeManifest(manifestPath, { ...prior, status: "running", startedAt, input, style, queueReceipt, rendered, failed });
+                writeManifest(manifestPath, { ...prior, status: "running", startedAt, input, style, background, queueReceipt, rendered, failed });
                 continue;
             }
             let lastError;
@@ -53,7 +55,7 @@ export class ComicRenderer {
                         "infer", "image", "generate",
                         "--agent", "conductor",
                         "--model", "openai/gpt-image-2",
-                        "--prompt", composePagePrompt(input, page, style),
+                        "--prompt", composePagePrompt(input, page, style, background),
                         "--size", "1024x1536",
                         "--quality", "high",
                         "--output-format", "png",
@@ -74,7 +76,7 @@ export class ComicRenderer {
             }
             if (lastError)
                 failed.push({ pageNumber: page.pageNumber, error: errorMessage(lastError) });
-            writeManifest(manifestPath, { ...prior, status: "running", startedAt, input, style, queueReceipt, rendered, failed });
+            writeManifest(manifestPath, { ...prior, status: "running", startedAt, input, style, background, queueReceipt, rendered, failed });
         }
         const message = failed.length === 0
             ? `✅ Game and comic complete\n\n${input.summary}\n\nRun: \`${input.runId}\` · ${input.pages.length}/${input.pages.length} pages · art direction: ${style.id}`
@@ -97,6 +99,7 @@ export class ComicRenderer {
             storyTitle: input.story.title,
             pageCount: input.pages.length,
             style,
+            background,
             queueReceipt,
             rendered,
             failed,

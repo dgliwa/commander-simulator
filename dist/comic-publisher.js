@@ -2,7 +2,7 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
-import { normalizeComicInput, selectComicStyle, validateComicInput, } from "./comic-types.js";
+import { normalizeComicInput, selectComicBackground, selectComicStyle, validateComicInput, } from "./comic-types.js";
 import { writeManifest } from "./comic-renderer.js";
 export class ComicPublisher {
     comicRoot;
@@ -38,6 +38,7 @@ export class ComicPublisher {
         writeOwnerOnly(requestPath, request);
         const queuedAt = new Date().toISOString();
         const style = selectComicStyle(input.runId);
+        const background = selectComicBackground(input.runId);
         writeManifest(manifestPath, {
             status: "queued",
             queuedAt,
@@ -45,6 +46,7 @@ export class ComicPublisher {
             storyTitle: input.story.title,
             pageCount: input.pages.length,
             style,
+            background,
         });
         try {
             const workerPid = this.launchWorker(requestPath, logPath);
@@ -55,6 +57,7 @@ export class ComicPublisher {
                 storyTitle: input.story.title,
                 pageCount: input.pages.length,
                 style,
+                background,
                 workerPid,
             };
             writeManifest(manifestPath, queued);
@@ -69,6 +72,7 @@ export class ComicPublisher {
                 storyTitle: input.story.title,
                 pageCount: input.pages.length,
                 style,
+                background,
                 error: error instanceof Error ? error.message : String(error),
             };
             writeManifest(manifestPath, failed);
@@ -138,6 +142,7 @@ function statusResponse(manifestPath, manifest, accepted) {
         storyTitle: manifest.storyTitle ?? manifest.input?.story?.title,
         pageCount: manifest.pageCount ?? manifest.input?.pages?.length,
         style: manifest.style,
+        background: manifest.background,
         workerPid: manifest.workerPid,
         rendered: manifest.rendered ?? [],
         failed: manifest.failed ?? [],
