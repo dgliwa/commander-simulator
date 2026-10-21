@@ -350,10 +350,25 @@ function rejectDeckNamesAsCharacters(input: ComicPublishInput): void {
     const deckName = direction.deckName.trim().toLocaleLowerCase();
     const commanderName = direction.commanderName.trim().toLocaleLowerCase();
     const withoutCommanderReferences = narrativeText.replaceAll(commanderName, "");
-    if (deckName !== commanderName && withoutCommanderReferences.includes(deckName)) {
+    if (
+      deckName !== commanderName
+      && !isCommanderNameShortening(deckName, commanderName)
+      && withoutCommanderReferences.includes(deckName)
+    ) {
       throw new Error(`Comic narrative must use commander ${direction.commanderName}, not deck title ${direction.deckName}, as the character.`);
     }
   }
+}
+
+function isCommanderNameShortening(candidate: string, commanderName: string): boolean {
+  const candidateTokens = nameTokens(candidate);
+  const commanderTokens = nameTokens(commanderName);
+  if (candidateTokens.length === 0 || candidateTokens.length >= commanderTokens.length) return false;
+  return commanderTokens.some((_, start) => candidateTokens.every((token, offset) => commanderTokens[start + offset] === token));
+}
+
+function nameTokens(value: string): string[] {
+  return value.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
 }
 
 function stableHash(value: string): number {
