@@ -118,10 +118,26 @@ describe("ComicRenderer", () => {
     expect(prompt).toContain("Never show game UI, life totals");
   });
 
-  test("rejects deck names used as acting comic characters", () => {
+  test("rejects unrelated deck names used as acting comic characters", () => {
     const source = input();
-    source.pages[0].panels[0].dialogue = [{ speaker: "Alpha", text: "I attack." }];
-    expect(() => validateComicInput(source)).toThrow("must use commander Aria, Flame Captain");
+    source.story.personaDirections[0] = {
+      ...source.story.personaDirections[0],
+      deckName: "Wizards of Waverly Place",
+      commanderName: "Inalla, Archmage Ritualist",
+    };
+    source.pages[0].panels[0].dialogue = [{ speaker: "Wizards of Waverly Place", text: "I attack." }];
+    expect(() => validateComicInput(source)).toThrow("must use commander Inalla, Archmage Ritualist");
+  });
+
+  test("allows deck names that are shortened commander names", () => {
+    const source = input();
+    source.story.personaDirections[0] = {
+      ...source.story.personaDirections[0],
+      deckName: "Smaug",
+      commanderName: "Smaug the Magnificent",
+    };
+    source.pages[0].panels[0].dialogue = [{ speaker: "Smaug", text: "I attack." }];
+    expect(() => validateComicInput(source)).not.toThrow();
   });
 
   test("normalizes nested pages and missing dialogue before validation", () => {
