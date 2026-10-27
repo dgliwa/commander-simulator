@@ -53,6 +53,13 @@ const comicStory = Type.Object({
   personaDirections: Type.Array(comicPersonaDirection, { minItems: 2, maxItems: 8 }),
 pages: Type.Optional(Type.Array(comicPage, { minItems: 3, maxItems: 4, description: "Accepted for recovery from older nested comic plans; top-level pages are preferred." })),
 }, { additionalProperties: false });
+const seasonEpisode = Type.Object({
+  dayNumber: Type.Integer({ minimum: 1, maximum: 7 }),
+  summary: Type.String({ minLength: 1, maxLength: 8_000 }),
+  continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
+  story: comicStory,
+  pages: Type.Array(comicPage, { minItems: 3, maxItems: 4 }),
+}, { additionalProperties: false });
 
 async function withService<T>(api: any, config: Record<string, unknown>, operation: (service: CommanderSimulatorService) => T | Promise<T>): Promise<T> {
   const stateDir = api.runtime.state.resolveStateDir(process.env);
@@ -139,6 +146,47 @@ export default defineToolPlugin({
       execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.simulate(input)); },
     }),
     tool({
+      name: "commander_season_create",
+      description: "Create a durable seven-day comic season from exactly two real owned built decks as heroes and four generated/not-owned built decks as opponents. The generated tag is enforced so synthetic decks cannot be mistaken for owned decks.",
+      parameters: Type.Object({
+        confirmed: Type.Literal(true),
+        seasonKey: Type.String({ pattern: "^[a-z0-9][a-z0-9_-]{0,99}$" }),
+        title: Type.String({ minLength: 1, maxLength: 300 }),
+        heroPublicIds: Type.Array(id, { minItems: 2, maxItems: 2 }),
+        opponentPublicIds: Type.Array(id, { minItems: 4, maxItems: 4 }),
+      }, { additionalProperties: false }),
+      execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.createSeason(input)); },
+    }),
+    tool({
+      name: "commander_season_simulate_next",
+      description: "Run and store the next factual game in a comic season. Games 1-6 rotate every opponent pair alongside both heroes; game 7 is a finale against the two strongest opponents. Call once per game and read each stored log before planning.",
+      parameters: Type.Object({
+        seasonId: id,
+        confirmed: Type.Literal(true),
+        seed: Type.Optional(Type.Integer({ minimum: 0, maximum: 2_147_483_647 })),
+        timeoutSeconds: Type.Optional(Type.Integer({ minimum: 10, maximum: 300, default: 300 })),
+      }, { additionalProperties: false }),
+      execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.simulateNextSeasonGame(input)); },
+    }),
+    tool({
+      name: "commander_season_plan",
+      description: "After all seven games, store one complete seven-episode narrative plan. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible.",
+      parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true), episodes: Type.Array(seasonEpisode, { minItems: 7, maxItems: 7 }) }, { additionalProperties: false }),
+      execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.planSeason(input)); },
+    }),
+    tool({
+      name: "commander_season_publish_next",
+      description: "Reconcile rendering status and queue at most one next season episode for resumable image generation and Discord delivery. It never reruns games or rewrites the stored season plan.",
+      parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true) }, { additionalProperties: false }),
+      execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.publishNextSeasonEpisode(input)); },
+    }),
+    tool({
+      name: "commander_season_status",
+      description: "Inspect one comic season or list recent seasons, including cast provenance, factual game runs, episode progress, and the next required action.",
+      parameters: Type.Object({ seasonId: Type.Optional(id) }, { additionalProperties: false }),
+      execute: async ({ seasonId }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.seasonStatus(seasonId)); },
+    }),
+    tool({
       name: "commander_daily_game",
       description: "Select four distinct built decks, shuffle the four Forge personas one per deck, update the reusable Daily Commander Game pod, and run one durably logged game. Requires explicit confirmation.",
       parameters: Type.Object({ confirmed: Type.Literal(true), seed: Type.Optional(Type.Integer({ minimum: 0, maximum: 2_147_483_647 })), timeoutSeconds: Type.Optional(Type.Integer({ minimum: 10, maximum: 300, default: 180 })) }, { additionalProperties: false }),
@@ -164,6 +212,8 @@ export default defineToolPlugin({
         runId: id,
         summary: Type.String({ minLength: 1, maxLength: 8_000 }),
         continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
+        artDirectionSeed: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+        seriesLabel: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
         story: comicStory,
         pages: Type.Optional(Type.Array(comicPage, { minItems: 3, maxItems: 4 })),
       }, { additionalProperties: false }),

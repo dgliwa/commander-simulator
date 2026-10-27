@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { ComicPublisher } from "./comic-publisher.js";
+import { normalizeComicInput, validateComicInput } from "./comic-types.js";
 import { runForge } from "./forge.js";
 import { FORGE_PERSONAS } from "./types.js";
 export class CommanderSimulatorService {
@@ -159,6 +160,122 @@ export class CommanderSimulatorService {
             personas: aggregateStandings(deckPersonas, entry => entry.persona, ([persona]) => ({ persona })),
         };
     }
+    createSeason(input) {
+        const heroes = uniqueIds(input.heroPublicIds, 2, "heroPublicIds");
+        const opponents = uniqueIds(input.opponentPublicIds, 4, "opponentPublicIds");
+        if (heroes.some(id => opponents.includes(id)))
+            throw new Error("Heroes and generated opponents must be distinct decks.");
+        for (const publicId of heroes) {
+            const deck = this.assertBuilt(publicId);
+            if (deck.tags.includes("generated") || deck.tags.includes("not-owned"))
+                throw new Error(`${deck.name} is generated/not-owned and cannot be selected as a hero.`);
+        }
+        for (const publicId of opponents) {
+            const deck = this.assertBuilt(publicId);
+            if (!deck.tags.includes("generated") || !deck.tags.includes("not-owned"))
+                throw new Error(`${deck.name} must be tagged generated and not-owned to serve as a season opponent.`);
+        }
+        const seasonKey = input.seasonKey.trim().toLowerCase();
+        if (!/^[a-z0-9][a-z0-9_-]{0,99}$/.test(seasonKey))
+            throw new Error("seasonKey must use 1-100 lowercase letters, numbers, underscores, or hyphens.");
+        const season = this.database.createSeason({ seasonKey, title: cleanName(input.title), heroPublicIds: heroes, opponentPublicIds: opponents });
+        return this.seasonDetails(season.id);
+    }
+    async simulateNextSeasonGame(input) {
+        const season = this.database.getSeason(input.seasonId);
+        const priorGames = this.database.getSeasonGames(season.id);
+        if (priorGames.length >= 7)
+            throw new Error("All seven season games are already stored.");
+        const gameNumber = priorGames.length + 1;
+        const opponentPair = gameNumber <= 6
+            ? opponentPairForGame(season.opponentPublicIds, gameNumber)
+            : this.finaleOpponents(season.opponentPublicIds, priorGames);
+        const ids = [...season.heroPublicIds, ...opponentPair];
+        const participants = ids.map((publicId, index) => ({
+            publicId,
+            persona: FORGE_PERSONAS[(index + gameNumber - 1) % FORGE_PERSONAS.length],
+        }));
+        const label = gameNumber === 7 ? "Finale" : `Round ${gameNumber}`;
+        const pod = this.createPod({ name: `${season.title} · ${label}`, participants });
+        this.database.updateSeasonStatus(season.id, "simulating");
+        const run = await this.simulate({
+            podId: pod.id,
+            games: 1,
+            seed: input.seed === undefined ? seasonSeed(season.styleSeed, gameNumber) : input.seed,
+            timeoutSeconds: input.timeoutSeconds ?? 300,
+            confirmed: true,
+        });
+        if (!run.games.some(game => game.status === "completed" || game.status === "draw")) {
+            return { stored: false, seasonId: season.id, gameNumber, label, run, retry: "Call commander_season_simulate_next again; failed runs are preserved but do not advance the season." };
+        }
+        this.database.addSeasonGame({ seasonId: season.id, gameNumber, label, podId: pod.id, runId: run.id, participantPublicIds: ids });
+        if (gameNumber === 7)
+            this.database.updateSeasonStatus(season.id, "awaiting_plan");
+        return { stored: true, ...this.seasonDetails(season.id), latestRun: run };
+    }
+    planSeason(input) {
+        const season = this.database.getSeason(input.seasonId);
+        const games = this.database.getSeasonGames(season.id);
+        if (games.length !== 7)
+            throw new Error("All seven season games must be completed before planning episodes.");
+        if (input.episodes.length !== 7 || new Set(input.episodes.map(episode => episode.dayNumber)).size !== 7) {
+            throw new Error("A season plan requires exactly one episode for each day 1 through 7.");
+        }
+        const planned = [...input.episodes].sort((left, right) => left.dayNumber - right.dayNumber).map((episode, index) => {
+            if (episode.dayNumber !== index + 1)
+                throw new Error("Episode dayNumber values must cover 1 through 7.");
+            const game = games[index];
+            const comic = normalizeComicInput({
+                confirmed: true,
+                runId: game.runId,
+                summary: episode.summary,
+                continuityGuide: episode.continuityGuide,
+                artDirectionSeed: season.styleSeed,
+                seriesLabel: `${season.title} · Day ${episode.dayNumber} of 7`,
+                story: episode.story,
+                pages: episode.pages,
+            });
+            validateComicInput(comic);
+            return { dayNumber: episode.dayNumber, runId: game.runId, comic };
+        });
+        this.database.saveSeasonPlan(season.id, planned);
+        return this.seasonDetails(season.id);
+    }
+    publishNextSeasonEpisode(input) {
+        const season = this.database.getSeason(input.seasonId);
+        const publisher = new ComicPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
+        const episodes = this.database.getSeasonEpisodes(season.id);
+        if (episodes.length !== 7)
+            throw new Error("The season does not yet have seven planned episodes.");
+        for (const episode of episodes) {
+            const status = publisher.status(episode.runId);
+            if (status.status === "completed" && episode.status !== "published") {
+                this.database.updateEpisodeStatus(season.id, episode.dayNumber, "published", String(status.completedAt ?? new Date().toISOString()));
+            }
+            else if ((status.status === "queued" || status.status === "running") && episode.status !== status.status) {
+                this.database.updateEpisodeStatus(season.id, episode.dayNumber, status.status);
+            }
+            else if ((status.status === "failed" || status.status === "partial") && episode.status !== "failed") {
+                this.database.updateEpisodeStatus(season.id, episode.dayNumber, "failed");
+            }
+        }
+        const refreshed = this.database.getSeasonEpisodes(season.id);
+        const active = refreshed.find(episode => episode.status === "queued" || episode.status === "running");
+        if (active)
+            return { queued: false, reason: "An episode is already rendering.", ...this.seasonDetails(season.id) };
+        const next = refreshed.find(episode => episode.status === "planned" || episode.status === "failed");
+        if (!next) {
+            this.database.updateSeasonStatus(season.id, "completed");
+            return { queued: false, reason: "All seven episodes are published.", ...this.seasonDetails(season.id) };
+        }
+        this.database.updateSeasonStatus(season.id, "publishing");
+        const publication = publisher.enqueue(next.comic);
+        this.database.updateEpisodeStatus(season.id, next.dayNumber, "queued");
+        return { queued: true, dayNumber: next.dayNumber, publication, ...this.seasonDetails(season.id) };
+    }
+    seasonStatus(seasonId) {
+        return seasonId ? this.seasonDetails(seasonId) : { seasons: this.database.listSeasons().map(season => this.seasonDetails(season.id)) };
+    }
     async dailyGame(input) {
         const seed = input.seed === undefined ? dailySeed() : integer(input.seed, 0, 2_147_483_647, "seed");
         const decks = this.magic.listBuilt();
@@ -192,6 +309,32 @@ export class CommanderSimulatorService {
             forge: { java: this.paths.java, jar: this.paths.forgeJar, deckDirectory: this.paths.deckDirectory },
             limits: { players: "2-8", gamesPerInvocation: "1-10", perGameTimeoutSeconds: "10-300" },
         };
+    }
+    seasonDetails(seasonId) {
+        const season = this.database.getSeason(seasonId);
+        const games = this.database.getSeasonGames(seasonId).map(game => ({ ...game, run: this.database.getRun(game.runId) }));
+        const episodes = this.database.getSeasonEpisodes(seasonId).map(({ comic: _comic, ...episode }) => episode);
+        return {
+            season,
+            cast: {
+                heroes: season.heroPublicIds.map(publicId => this.magic.get(publicId)).map(deck => ({ publicId: deck.publicId, name: deck.name, commanders: commanderNames(deck), tags: deck.tags })),
+                opponents: season.opponentPublicIds.map(publicId => this.magic.get(publicId)).map(deck => ({ publicId: deck.publicId, name: deck.name, commanders: commanderNames(deck), tags: deck.tags })),
+            },
+            games,
+            episodes,
+            nextAction: games.length < 7 ? "simulate_next" : episodes.length < 7 ? "plan" : episodes.some(episode => episode.status !== "published") ? "publish_next" : "complete",
+        };
+    }
+    finaleOpponents(opponents, games) {
+        const wins = new Map(opponents.map(id => [id, 0]));
+        for (const game of games) {
+            const run = this.database.getRun(game.runId);
+            for (const [publicId, count] of Object.entries(run.winnerCounts)) {
+                if (wins.has(publicId))
+                    wins.set(publicId, (wins.get(publicId) ?? 0) + count);
+            }
+        }
+        return [...opponents].sort((left, right) => (wins.get(right) ?? 0) - (wins.get(left) ?? 0) || opponents.indexOf(left) - opponents.indexOf(right)).slice(0, 2);
     }
     assertBuilt(publicId) {
         const deck = this.magic.get(publicId);
@@ -233,6 +376,30 @@ function dailySeed() {
     const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
     const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
     return Number(`${value.year}${value.month}${value.day}`);
+}
+function opponentPairForGame(opponents, gameNumber) {
+    const pairs = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
+    const pair = pairs[gameNumber - 1];
+    if (!pair)
+        throw new Error(`No round-robin pairing for game ${gameNumber}.`);
+    return [opponents[pair[0]], opponents[pair[1]]];
+}
+function seasonSeed(styleSeed, gameNumber) {
+    let hash = 2166136261;
+    for (const character of `${styleSeed}:${gameNumber}`) {
+        hash ^= character.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) % 2_147_483_647;
+}
+function uniqueIds(values, expected, label) {
+    const ids = values.map(value => value.trim()).filter(Boolean);
+    if (ids.length !== expected || new Set(ids).size !== expected)
+        throw new Error(`${label} must contain exactly ${expected} distinct deck IDs.`);
+    return ids;
+}
+function commanderNames(deck) {
+    return deck.cards.filter(card => card.board === "commanders").flatMap(card => Array.from({ length: card.quantity }, () => card.name));
 }
 function cleanName(value) {
     const name = value.trim();

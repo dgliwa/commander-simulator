@@ -141,6 +141,10 @@ export function validateComicInput(input) {
         throw new Error("runId must be a simulator UUID.");
     safeText(input.summary, 1, 8_000, "summary");
     safeText(input.continuityGuide, 200, 12_000, "continuityGuide");
+    if (input.artDirectionSeed !== undefined)
+        safeText(input.artDirectionSeed, 1, 200, "artDirectionSeed");
+    if (input.seriesLabel !== undefined)
+        safeText(input.seriesLabel, 1, 300, "seriesLabel");
     safeText(input.story.title, 1, 300, "story.title");
     safeText(input.story.premise, 20, 2_000, "story.premise");
     safeText(input.story.dramaticQuestion, 10, 1_000, "story.dramaticQuestion");
@@ -215,7 +219,7 @@ export function validateComicInput(input) {
         throw new Error("The comic must average at least one dialogue line per page.");
     rejectDeckNamesAsCharacters(input);
 }
-export function composePagePrompt(input, page, style = selectComicStyle(input.runId), background = selectComicBackground(input.runId)) {
+export function composePagePrompt(input, page, style = selectComicStyle(input.artDirectionSeed ?? input.runId), background = selectComicBackground(input.artDirectionSeed ?? input.runId)) {
     const personaDirections = input.story.personaDirections
         .map((direction) => `- ${direction.commanderName} / ${direction.persona}: ${direction.role}. Voice: ${direction.voice}`)
         .join("\n");
@@ -236,7 +240,8 @@ export function composePagePrompt(input, page, style = selectComicStyle(input.ru
         `PHYSICAL SURFACE: ${style.surface}`,
         `LAYOUT RHYTHM: ${style.layout}`,
         `COLOR SCRIPT: ${style.colorScript}`,
-        "Commit strongly to this medium. Do not fall back to generic polished digital fantasy painting, generic cinematic concept art, or the visual style of previous pages outside this run.",
+        "Commit strongly to this medium. Do not fall back to generic polished digital fantasy painting or generic cinematic concept art. When a series label is supplied, preserve the exact visual language and character bible across every episode in that series.",
+        ...(input.seriesLabel ? [`SERIES: ${input.seriesLabel}`] : []),
         `BACKGROUND STRATEGY — ${background.id}: ${background.direction}`,
         `BACKGROUND COMPOSITION: ${background.composition}`,
         `PAGE SETTING: ${page.setting}`,

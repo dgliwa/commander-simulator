@@ -25,11 +25,12 @@ export class ComicRenderer {
         const manifestPath = join(runDirectory, "manifest.json");
         const prior = readManifest(manifestPath);
         const startedAt = new Date().toISOString();
-        const style = selectComicStyle(input.runId);
-        const background = selectComicBackground(input.runId);
+        const artDirectionSeed = input.artDirectionSeed ?? input.runId;
+        const style = selectComicStyle(artDirectionSeed);
+        const background = selectComicBackground(artDirectionSeed);
         const rendered = [];
         const failed = [];
-        const queueReceipt = await this.sendMessage(`🎲 Commander game complete · comic queued\n\n**${input.story.title}**\nRun: \`${input.runId}\`\nArt direction: ${style.id} · ${background.id}\nRendering ${input.pages.length} pages independently; completed pages will be reused if recovery is needed.`).catch((error) => ({ status: "failed", error: errorMessage(error) }));
+        const queueReceipt = await this.sendMessage(`🎲 ${input.seriesLabel ? `${input.seriesLabel} · ` : "Commander game complete · "}comic queued\n\n**${input.story.title}**\nRun: \`${input.runId}\`\nArt direction: ${style.id} · ${background.id}\nRendering ${input.pages.length} pages independently; completed pages will be reused if recovery is needed.`).catch((error) => ({ status: "failed", error: errorMessage(error) }));
         writeManifest(manifestPath, {
             ...prior,
             status: "running",
@@ -79,8 +80,8 @@ export class ComicRenderer {
             writeManifest(manifestPath, { ...prior, status: "running", startedAt, input, style, background, queueReceipt, rendered, failed });
         }
         const message = failed.length === 0
-            ? `✅ Game and comic complete\n\n${input.summary}\n\nRun: \`${input.runId}\` · ${input.pages.length}/${input.pages.length} pages · art direction: ${style.id}`
-            : `⚠️ Game complete; comic partially published\n\n${input.summary}\n\nRun: \`${input.runId}\` · ${rendered.length}/${input.pages.length} pages · page${failed.length === 1 ? "" : "s"} ${failed.map((item) => item.pageNumber).join(", ")} failed. Requeueing the same run will reuse completed pages.`;
+            ? `✅ ${input.seriesLabel ? `${input.seriesLabel} episode` : "Game and comic"} complete\n\n${input.summary}\n\nRun: \`${input.runId}\` · ${input.pages.length}/${input.pages.length} pages · art direction: ${style.id}`
+            : `⚠️ ${input.seriesLabel ? `${input.seriesLabel} episode` : "Game comic"} partially published\n\n${input.summary}\n\nRun: \`${input.runId}\` · ${rendered.length}/${input.pages.length} pages · page${failed.length === 1 ? "" : "s"} ${failed.map((item) => item.pageNumber).join(", ")} failed. Requeueing the same run will reuse completed pages.`;
         const deliveryArgs = [
             "message", "send",
             "--channel", "discord",

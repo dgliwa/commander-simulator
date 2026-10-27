@@ -16,6 +16,10 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - Bounded event-log reading for storytelling and review
 - Durable standings by deck, persona, and deck-persona pairing
 - Deterministic daily four-deck selection with each persona assigned once
+- Durable seven-day comic seasons with two owned heroes and four generated/not-owned opponents
+- Six round-robin four-player games plus a seventh top-opponent finale
+- Stored seven-episode plans bound to factual simulation runs
+- One locked art direction and continuity bible across all season episodes
 - Deterministic sequential comic rendering through the headless OpenClaw image CLI
 - Resumable page generation with validated owner-only PNGs and a durable prompt manifest
 - Commander-led comic narration with subtle in-world tapping, mana, casting, graveyard, exile, and command references—without scoreboards or game UI
@@ -35,6 +39,11 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 - `commander_pod_delete`
 - `commander_pod_status`
 - `commander_simulate`
+- `commander_season_create`
+- `commander_season_simulate_next`
+- `commander_season_plan`
+- `commander_season_publish_next`
+- `commander_season_status`
 - `commander_daily_game`
 - `commander_run_log`
 - `commander_standings`
@@ -65,6 +74,7 @@ Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before 
 - Simulations require `confirmed: true`.
 - Forge runs as a child process with fixed argument arrays, memory limits, bounded output, and timeouts.
 - Deck snapshots are read from Magic Workspace using a read-only SQLite connection.
+- Season heroes must be real `built` decks without `generated` or `not-owned`; season opponents must carry both provenance tags.
 - Runtime files, logs, exported decks, and SQLite state are owner-only.
 - No remote writes or purchases are possible.
 - Results are playtest evidence, not authoritative deck power ratings; Forge AI is weaker with politics, control, and combo lines.
