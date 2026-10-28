@@ -46,7 +46,9 @@ describe("Season cover", () => {
   test("builds a spoiler-free single-cover prompt with the complete cast", () => {
     const prompt = composeSeasonCoverPrompt(input());
     expect(prompt).toContain("Ashes Over the Green Meridian");
-    expect(prompt).toContain("A Seven-Day Commander Story");
+    expect(prompt).toContain("The title must be the only text in the image");
+    expect(prompt).not.toContain("A Seven-Day Commander Story");
+    expect(prompt).toContain("Never mention Commander, Magic: The Gathering, games, players, turns, decks, episodes");
     expect(prompt).toContain("Bard, King of Dale and Galadriel, Elven-Queen");
     expect(prompt).toContain("Drakuseth, Maw of Flames");
     expect(prompt).toContain("no panels, gutters, speech balloons");
