@@ -46,11 +46,11 @@ export function composeSeasonCoverPrompt(input: SeasonCoverInput): string {
   const background = selectComicBackground(input.artDirectionSeed);
   const heroes = input.characters.filter(character => character.role === "hero").map(character => character.commanderName);
   const rivals = input.characters.filter(character => character.role === "rival").map(character => character.commanderName);
-  return `Create one vertical 1024x1536 illustrated cover for an original seven-day Commander fantasy serial.
+  return `Create one vertical 1024x1536 illustrated cover for an original serialized fantasy story.
 
 TITLE — Render this exact title clearly once in a strong hand-lettered display treatment near the top: “${input.seasonTitle}”
-SUBTITLE — Render this exact smaller line once: “A Seven-Day Commander Story”
-Do not render any other words, logos, card frames, rules text, scores, UI, watermarks, or publisher marks.
+The title must be the only text in the image. Do not add a subtitle, tagline, author credit, logo, card frame, rules text, score, UI, watermark, or publisher mark.
+Keep all framing entirely in-world. Never mention Commander, Magic: The Gathering, games, players, turns, decks, episodes, or the seven-day publication structure.
 
 STAGE-SETTING PREMISE
 ${input.premise}

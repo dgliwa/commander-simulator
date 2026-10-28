@@ -31,7 +31,8 @@ Whole-season planning:
 4. Bind day N to game N. Every page needs at least one concrete factual `gameplayCue` from that run and every episode needs at least two visibly distinct settings.
 5. Write one detailed continuity guide reused verbatim across all seven episodes. Define exact visual appearance, silhouette, clothing, equipment, scale, color accents, voice, injuries, recurring locations, weather progression, and props for all six commanders. The renderer locks medium and background style by season automatically.
 6. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters.
-7. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
-8. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
+7. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, consequences, and clever allusions; never explain the story as a game or refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
+8. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
+9. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
 
 Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.
