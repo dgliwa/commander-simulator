@@ -44,6 +44,41 @@ export interface SimulationGame {
   status: "completed" | "draw" | "failed";
 }
 
+export type SeasonStatus = "draft" | "simulating" | "awaiting_plan" | "ready" | "publishing" | "completed";
+export type SeasonEpisodeStatus = "planned" | "queued" | "running" | "published" | "failed";
+
+export interface ComicSeason {
+  id: string;
+  seasonKey: string;
+  title: string;
+  status: SeasonStatus;
+  heroPublicIds: string[];
+  opponentPublicIds: string[];
+  styleSeed: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+export interface SeasonGame {
+  seasonId: string;
+  gameNumber: number;
+  label: string;
+  podId: string;
+  runId: string;
+  participantPublicIds: string[];
+  createdAt: string;
+}
+
+export interface SeasonEpisode {
+  seasonId: string;
+  dayNumber: number;
+  runId: string;
+  status: SeasonEpisodeStatus;
+  comic: unknown;
+  publishedAt?: string;
+}
+
 export interface SimulationRun {
   id: string;
   podId: string;

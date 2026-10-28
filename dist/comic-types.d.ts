@@ -34,6 +34,8 @@ export interface ComicPublishInput {
     runId: string;
     summary: string;
     continuityGuide: string;
+    artDirectionSeed?: string;
+    seriesLabel?: string;
     story: ComicStoryPlan;
     pages: ComicPageInput[];
 }

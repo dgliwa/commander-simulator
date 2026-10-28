@@ -9,6 +9,23 @@ export declare class MagicDeckSource {
         publicUrl: string;
         cardCount: number;
         snapshotRefreshedAt: string | undefined;
+        tags: string[];
+    }[];
+    listOwnedBuilt(): {
+        publicId: string;
+        name: string;
+        publicUrl: string;
+        cardCount: number;
+        snapshotRefreshedAt: string | undefined;
+        tags: string[];
+    }[];
+    listGeneratedBuilt(): {
+        publicId: string;
+        name: string;
+        publicUrl: string;
+        cardCount: number;
+        snapshotRefreshedAt: string | undefined;
+        tags: string[];
     }[];
     get(publicId: string): MagicDeckRecord;
     compatibility(publicId: string): {
@@ -28,5 +45,6 @@ export declare class MagicDeckSource {
         warnings: string[];
         compatible: boolean;
     };
+    private tags;
 }
 export declare function forgeCardName(name: string): string;

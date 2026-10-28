@@ -29,7 +29,16 @@ export class MagicDeckSource {
       publicUrl: String(row.public_url),
       cardCount: Number(row.card_count),
       snapshotRefreshedAt: row.snapshot_refreshed_at ? String(row.snapshot_refreshed_at) : undefined,
+      tags: this.tags(String(row.public_id)),
     }));
+  }
+
+  listOwnedBuilt() {
+    return this.listBuilt().filter(deck => !deck.tags.includes("generated") && !deck.tags.includes("not-owned"));
+  }
+
+  listGeneratedBuilt() {
+    return this.listBuilt().filter(deck => deck.tags.includes("generated") && deck.tags.includes("not-owned"));
   }
 
   get(publicId: string): MagicDeckRecord {
@@ -76,6 +85,10 @@ export class MagicDeckSource {
     if (commanderCount + mainboardCount !== 100) warnings.push(`Commander plus mainboard contains ${commanderCount + mainboardCount} cards instead of 100.`);
     if (!deck.tags.includes("built")) warnings.push("Deck is not tagged built in Magic Workspace.");
     return { deck: { publicId: deck.publicId, name: deck.name, publicUrl: deck.publicUrl, tags: deck.tags }, commanderCount, mainboardCount, total: commanderCount + mainboardCount, transformedNames, warnings, compatible: warnings.length === 0 };
+  }
+
+  private tags(publicId: string): string[] {
+    return (this.db.prepare("SELECT tag FROM moxfield_deck_tags WHERE public_id=? ORDER BY tag").all(publicId) as Row[]).map(item => String(item.tag));
   }
 }
 

@@ -166,6 +166,20 @@ describe("ComicRenderer", () => {
     expect(prompt).toContain(`BACKGROUND STRATEGY — ${background.id}`);
   });
 
+  test("locks art direction across separate season episode runs", () => {
+    const first = input();
+    first.artDirectionSeed = "season-2026-w44";
+    first.seriesLabel = "The Ember Crown · Day 1 of 7";
+    const second = input();
+    second.runId = "bee8847f-f6b9-44bd-88b3-7b1b005a108d";
+    second.artDirectionSeed = first.artDirectionSeed;
+    const firstPrompt = composePagePrompt(first, first.pages[0]);
+    const secondPrompt = composePagePrompt(second, second.pages[0]);
+    expect(firstPrompt).toContain("SERIES: The Ember Crown · Day 1 of 7");
+    expect(firstPrompt).toContain(`DAILY MEDIUM AND STYLE — ${selectComicStyle(first.artDirectionSeed).id}`);
+    expect(secondPrompt).toContain(`DAILY MEDIUM AND STYLE — ${selectComicStyle(first.artDirectionSeed).id}`);
+  });
+
   test("requires factual gameplay cues and varied page settings", () => {
     const missingCue = input();
     missingCue.pages[0].panels.forEach(panel => { delete panel.gameplayCue; });

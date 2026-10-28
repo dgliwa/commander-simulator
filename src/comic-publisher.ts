@@ -51,8 +51,9 @@ export class ComicPublisher {
     };
     writeOwnerOnly(requestPath, request);
     const queuedAt = new Date().toISOString();
-    const style = selectComicStyle(input.runId);
-    const background = selectComicBackground(input.runId);
+    const artDirectionSeed = input.artDirectionSeed ?? input.runId;
+    const style = selectComicStyle(artDirectionSeed);
+    const background = selectComicBackground(artDirectionSeed);
     writeManifest(manifestPath, {
       status: "queued",
       queuedAt,
