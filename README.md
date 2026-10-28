@@ -75,6 +75,14 @@ The Magic Workspace registry defaults to `~/.openclaw/plugins/magic-workspace/ma
 
 Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The tool validates a structured story plan, panel beats, concise dialogue, persona voices, and a repeated continuity guide, then queues an owner-only detached publisher and returns immediately. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
 
+Completed comics expose a read-only, publication-safe projection for the blog publisher:
+
+```bash
+node dist/publication-cli.js --root ~/.local/share/commander-simulator/data/comics get <run-id>
+```
+
+The projection includes story framing and rendered pages in reading order. It excludes continuity prompts, generation prompts, Discord receipts, logs, and delivery internals.
+
 ## Safety model
 
 - Simulations require `confirmed: true`.
