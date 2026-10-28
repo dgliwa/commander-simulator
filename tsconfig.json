@@ -9,5 +9,5 @@
     "outDir": "dist",
     "skipLibCheck": true
   },
-  "include": ["src/index.ts", "src/comic-worker.ts", "src/season-cover-worker.ts"]
+  "include": ["src/index.ts", "src/comic-worker.ts", "src/season-cover-worker.ts", "src/publication-cli.ts"]
 }
