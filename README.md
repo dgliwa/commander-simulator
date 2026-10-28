@@ -30,8 +30,8 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 
 ## Season automation
 
-- `automation/weekly-season.md` prepares or resumes the current week: four validated generated decks, two owned heroes, seven factual games, and a complete stored arc.
-- `automation/daily-episode.md` reconciles prior rendering and queues at most one stored episode without polling or rerunning games.
+- `automation/weekly-season.md` prepares or resumes the current week: four validated generated decks, two owned heroes, seven factual games, a complete stored arc, and an automatically rendered Discord cover.
+- `automation/daily-episode.md` ensures the cover is delivered before reconciling and queueing at most one stored episode, without polling or rerunning games.
 - Weekly generated decks remain in Magic Workspace with `generated`, `not-owned`, `built`, and season provenance tags.
 
 ## Tools
