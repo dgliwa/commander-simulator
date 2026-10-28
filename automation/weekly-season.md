@@ -32,5 +32,6 @@ Whole-season planning:
 5. Write one detailed continuity guide reused verbatim across all seven episodes. Define exact visual appearance, silhouette, clothing, equipment, scale, color accents, voice, injuries, recurring locations, weather progression, and props for all six commanders. The renderer locks medium and background style by season automatically.
 6. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters.
 7. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
+8. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
 
-Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns publication.
+Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.

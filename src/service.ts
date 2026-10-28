@@ -4,6 +4,8 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { ComicPublisher } from "./comic-publisher.js";
 import { normalizeComicInput, type ComicPublishDraft, type ComicPublishInput, validateComicInput } from "./comic-types.js";
 import { SimulatorDatabase } from "./database.js";
+import { SeasonCoverPublisher } from "./season-cover-publisher.js";
+import type { SeasonCoverInput } from "./season-cover-types.js";
 import { runForge } from "./forge.js";
 import { MagicDeckSource } from "./magic-source.js";
 import type { SimulatorPaths } from "./paths.js";
@@ -250,14 +252,30 @@ export class CommanderSimulatorService {
       return { dayNumber: episode.dayNumber, runId: game.runId, comic };
     });
     this.database.saveSeasonPlan(season.id, planned);
-    return this.seasonDetails(season.id);
+    const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
+    let coverPublication: Record<string, unknown>;
+    try {
+      coverPublication = coverPublisher.enqueue(this.seasonCoverInput(season.id, planned[0]!.comic));
+    } catch (error) {
+      coverPublication = { status: "failed_to_queue", error: error instanceof Error ? error.message : String(error) };
+    }
+    return { ...this.seasonDetails(season.id), coverPublication };
   }
 
   publishNextSeasonEpisode(input: { seasonId: string; confirmed: true }) {
     const season = this.database.getSeason(input.seasonId);
     const publisher = new ComicPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
+    const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
     const episodes = this.database.getSeasonEpisodes(season.id);
     if (episodes.length !== 7) throw new Error("The season does not yet have seven planned episodes.");
+    const coverStatus = coverPublisher.status(season.id);
+    if (coverStatus.status === "queued" || coverStatus.status === "running") {
+      return { queued: false, publicationType: "cover", reason: "The season cover is already rendering.", ...this.seasonDetails(season.id) };
+    }
+    if (coverStatus.status !== "completed") {
+      const coverPublication = coverPublisher.enqueue(this.seasonCoverInput(season.id, episodes[0]!.comic as ComicPublishInput));
+      return { queued: true, publicationType: "cover", coverPublication, ...this.seasonDetails(season.id) };
+    }
     for (const episode of episodes) {
       const status = publisher.status(episode.runId);
       if (status.status === "completed" && episode.status !== "published") {
@@ -334,6 +352,7 @@ export class CommanderSimulatorService {
     const season = this.database.getSeason(seasonId);
     const games = this.database.getSeasonGames(seasonId).map(game => ({ ...game, run: this.database.getRun(game.runId) }));
     const episodes = this.database.getSeasonEpisodes(seasonId).map(({ comic: _comic, ...episode }) => episode);
+    const cover = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand).status(season.id);
     return {
       season,
       cast: {
@@ -342,7 +361,26 @@ export class CommanderSimulatorService {
       },
       games,
       episodes,
+      cover,
       nextAction: games.length < 7 ? "simulate_next" : episodes.length < 7 ? "plan" : episodes.some(episode => episode.status !== "published") ? "publish_next" : "complete",
+    };
+  }
+
+  private seasonCoverInput(seasonId: string, comic: ComicPublishInput): SeasonCoverInput {
+    const season = this.database.getSeason(seasonId);
+    const characters = [
+      ...season.heroPublicIds.map(publicId => ({ commanderName: commanderNames(this.magic.get(publicId))[0] ?? this.magic.get(publicId).name, role: "hero" as const })),
+      ...season.opponentPublicIds.map(publicId => ({ commanderName: commanderNames(this.magic.get(publicId))[0] ?? this.magic.get(publicId).name, role: "rival" as const })),
+    ];
+    return {
+      confirmed: true,
+      seasonId: season.id,
+      seasonTitle: season.title,
+      premise: comic.story.premise,
+      dramaticQuestion: comic.story.dramaticQuestion,
+      continuityGuide: comic.continuityGuide,
+      artDirectionSeed: season.styleSeed,
+      characters,
     };
   }
 

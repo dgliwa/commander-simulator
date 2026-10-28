@@ -168,19 +168,19 @@ export default defineToolPlugin({
         }),
         tool({
             name: "commander_season_plan",
-            description: "After all seven games, store one complete seven-episode narrative plan. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible.",
+            description: "After all seven games, store one complete seven-episode narrative plan and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible.",
             parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true), episodes: Type.Array(seasonEpisode, { minItems: 7, maxItems: 7 }) }, { additionalProperties: false }),
             execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.planSeason(input)); },
         }),
         tool({
             name: "commander_season_publish_next",
-            description: "Reconcile rendering status and queue at most one next season episode for resumable image generation and Discord delivery. It never reruns games or rewrites the stored season plan.",
+            description: "Ensure the season cover is delivered, then reconcile rendering status and queue at most one next episode for resumable image generation and Discord delivery. It never reruns games or rewrites the stored season plan.",
             parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true) }, { additionalProperties: false }),
             execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.publishNextSeasonEpisode(input)); },
         }),
         tool({
             name: "commander_season_status",
-            description: "Inspect one comic season or list recent seasons, including cast provenance, factual game runs, episode progress, and the next required action.",
+            description: "Inspect one comic season or list recent seasons, including cover status, cast provenance, factual game runs, episode progress, and the next required action.",
             parameters: Type.Object({ seasonId: Type.Optional(id) }, { additionalProperties: false }),
             execute: async ({ seasonId }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.seasonStatus(seasonId)); },
         }),
