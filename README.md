@@ -22,7 +22,7 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - One locked art direction and continuity bible across all season episodes
 - Deterministic sequential comic rendering through the headless OpenClaw image CLI
 - Resumable page generation with validated owner-only PNGs and a durable prompt manifest
-- Commander-led comic narration with subtle in-world tapping, mana, casting, graveyard, exile, and command references—without scoreboards or game UI
+- Commander-led comic narration with optional, sparse mechanical Easter eggs that read naturally in-world—even when the reference is missed—and no scoreboards, rules explanations, or game UI
 - Direct summary-and-image delivery to a fixed configured Discord channel
 - Basic deck-count and transformed-card-name compatibility checks
 
