@@ -58,6 +58,7 @@ interface CliIo {
     stdout(text: string): void;
     stderr(text: string): void;
 }
+export declare function pathInside(path: string, root: string): string;
 export declare function projectComic(manifest: CompletedManifest, comicRoot: string): ComicProjection;
 export declare function runPublicationCli(argv: string[], io: CliIo): number;
 export {};
