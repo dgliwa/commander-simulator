@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 function text(value) {
     return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
-function pathInside(path, root) {
+export function pathInside(path, root) {
     const realRoot = realpathSync(root);
     const realPath = realpathSync(path);
     const rel = relative(realRoot, realPath);

@@ -52,7 +52,7 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function pathInside(path: string, root: string): string {
+export function pathInside(path: string, root: string): string {
   const realRoot = realpathSync(root);
   const realPath = realpathSync(path);
   const rel = relative(realRoot, realPath);

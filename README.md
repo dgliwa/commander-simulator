@@ -83,6 +83,18 @@ node dist/publication-cli.js --root ~/.local/share/commander-simulator/data/comi
 
 The projection includes story framing and rendered pages in reading order. It excludes continuity prompts, generation prompts, Discord receipts, logs, and delivery internals.
 
+A season projection is available only after all seven matches and comic episodes are complete:
+
+```bash
+node dist/publication-cli.js \
+  --root ~/.local/share/commander-simulator/data/comics \
+  --database ~/.openclaw/plugins/commander-simulator/simulator.sqlite \
+  --magic-database ~/.openclaw/plugins/magic-workspace/magic.sqlite \
+  season get <season-id>
+```
+
+The season export contains the cover and every comic page in reading order, commander names with Scryfall links, season win/loss/draw records, and public match summaries plus key gameplay moments. It fails closed while a season or any episode remains incomplete.
+
 ## Safety model
 
 - Simulations require `confirmed: true`.
