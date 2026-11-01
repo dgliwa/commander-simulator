@@ -183,7 +183,10 @@ describe("CommanderSimulatorService", () => {
           panels: [1, 2, 3, 4].map(panel => ({
             visual: `The recurring commanders physically enact recorded battle pressure in panel ${panel}, with clear silhouettes and emotional consequences.`,
             gameplayCue: panel === 1 ? "The second seated hero visibly casts the recorded Heroic Finale while the first hero suffers the logged damage." : undefined,
-            dialogue: panel === 2 ? [{ speaker: game.run.participants[1].commanderNames[0], text: "The result is ours to face." }] : [],
+            dialogue: panel === 2 ? [{
+              speaker: game.run.participants[1].commanderNames[0],
+              text: `Day ${index + 1}, crossing ${pageNumber}: you keep mistaking patience for permission.`,
+            }] : [],
           })),
         })),
       }));

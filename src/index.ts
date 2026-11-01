@@ -11,7 +11,11 @@ const persona = Type.Union(FORGE_PERSONAS.map(value => Type.Literal(value)));
 const participant = Type.Object({ publicId: id, persona: Type.Optional(persona) }, { additionalProperties: false });
 const comicDialogue = Type.Object({
   speaker: Type.String({ minLength: 1, maxLength: 100 }),
-  text: Type.String({ minLength: 1, maxLength: 120 }),
+  text: Type.String({
+    minLength: 1,
+    maxLength: 120,
+    description: "Short, character-specific speech that performs a dramatic action through subtext, disagreement, wit, pressure, evasion, revelation, or decision. Never generic reaction filler or exposition of the visible panel.",
+  }),
 }, { additionalProperties: false });
 const comicPanel = Type.Object({
   visual: Type.String({ minLength: 20, maxLength: 3_000 }),
@@ -44,7 +48,11 @@ const comicPersonaDirection = Type.Object({
   commanderName: Type.String({ minLength: 1, maxLength: 300, description: "Exact commander name used for comic agency, captions, and dialogue attribution." }),
   persona,
   role: Type.String({ minLength: 3, maxLength: 500 }),
-  voice: Type.String({ minLength: 3, maxLength: 500 }),
+  voice: Type.String({
+    minLength: 20,
+    maxLength: 500,
+    description: "Concrete diction, rhythm, worldview, humor, and conversational behavior that makes this commander distinguishable without a speaker label.",
+  }),
 }, { additionalProperties: false });
 const comicStory = Type.Object({
   title: Type.String({ minLength: 1, maxLength: 300 }),
@@ -170,7 +178,7 @@ export default defineToolPlugin({
     }),
     tool({
       name: "commander_season_plan",
-      description: "After all seven games, store one complete seven-episode narrative plan and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible.",
+      description: "After all seven games, store one complete seven-episode narrative plan and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible. Dialogue must be voice-specific, active, and varied across all seven episodes; generic or repeated lines are rejected.",
       parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true), episodes: Type.Array(seasonEpisode, { minItems: 7, maxItems: 7 }) }, { additionalProperties: false }),
       execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.planSeason(input)); },
     }),
@@ -206,7 +214,7 @@ export default defineToolPlugin({
     }),
     tool({
       name: "commander_comic_publish",
-      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Read the full meaningful run log first, establish factual chronology, then adapt setup, escalation, reversal, climax, and aftermath. Use each commander—not the deck name—as a stable acting character. Supply at least one concrete factual gameplayCue per page so major casts, attacks, blocks, removal, sacrifice, recursion, or commander damage remain clearly recognizable as diegetic story actions. Give every page a concrete setting and 2-4 specific background elements, with at least two visibly distinct settings across the comic. Never add scores, UI, rules text, or invented mechanics. Requires explicit confirmation.",
+      description: "Queue independent sequential comic rendering and direct Discord delivery for one completed run, returning immediately without agent polling. Read the full meaningful run log first, establish factual chronology, then adapt setup, escalation, reversal, climax, and aftermath. Use each commander—not the deck name—as a stable acting character. Write sparse, voice-specific dialogue with subtext and dramatic intent; never repeat lines, narrate visible action, or use generic fantasy reactions. Supply at least one concrete factual gameplayCue per page so major casts, attacks, blocks, removal, sacrifice, recursion, or commander damage remain clearly recognizable as diegetic story actions. Give every page a concrete setting and 2-4 specific background elements, with at least two visibly distinct settings across the comic. Never add scores, UI, rules text, or invented mechanics. Requires explicit confirmation.",
       parameters: Type.Object({
         confirmed: Type.Literal(true),
         runId: id,

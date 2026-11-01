@@ -11,6 +11,7 @@ import {
   selectComicStyle,
   type ComicPublishInput,
   validateComicInput,
+  validateDialogueQuality,
 } from "./comic-types.js";
 
 const roots: string[] = [];
@@ -61,7 +62,7 @@ function input(): ComicPublishInput {
         visual: `Panel ${panel} shows the recurring champions acting on one recorded battlefield event with clear emotional stakes.`,
         gameplayCue: panel === 1 ? `Aria visibly spends gathered fire mana to cast the recorded spell on turn ${pageNumber}.` : undefined,
         caption: panel === 1 ? `Turning point ${pageNumber}` : undefined,
-        dialogue: panel === 2 ? [{ speaker: "Aria, Flame Captain", text: "Tapped out? How generous." }] : [],
+        dialogue: panel === 2 ? [{ speaker: "Aria, Flame Captain", text: `You left the ${["gate", "ford", "spire"][pageNumber - 1]} unguarded. How generous.` }] : [],
       })),
     })),
   };
@@ -111,7 +112,7 @@ describe("ComicRenderer", () => {
     const prompt = composePagePrompt(source, source.pages[0]);
     expect(prompt).toContain("Aria, Flame Captain / Reckless");
     expect(prompt).not.toContain("- Alpha / Reckless");
-    expect(prompt).toContain("Aria, Flame Captain: “Tapped out? How generous.”");
+    expect(prompt).toContain("Aria, Flame Captain: “You left the gate unguarded. How generous.”");
     expect(prompt).toContain("FACTUAL GAMEPLAY ANCHORS FOR THIS PAGE");
     expect(prompt).toContain("Aria visibly spends gathered fire mana");
     expect(prompt).toContain("REQUIRED BACKGROUND ELEMENTS");
@@ -138,6 +139,24 @@ describe("ComicRenderer", () => {
     };
     source.pages[0].panels[0].dialogue = [{ speaker: "Smaug", text: "I attack." }];
     expect(() => validateComicInput(source)).not.toThrow();
+  });
+
+  test("rejects repeated and generic dialogue before rendering", () => {
+    const repeated = input();
+    repeated.pages[1]!.panels[1]!.dialogue = [{ speaker: "Borin, Tide Warden", text: repeated.pages[0]!.panels[1]!.dialogue[0]!.text }];
+    expect(() => validateComicInput(repeated)).toThrow("Repeated dialogue must be rewritten");
+
+    const generic = input();
+    generic.pages[0]!.panels[1]!.dialogue = [{ speaker: "Aria, Flame Captain", text: "This ends now." }];
+    expect(() => validateComicInput(generic)).toThrow("Generic dialogue must be rewritten");
+  });
+
+  test("rejects repeated dialogue across separate season episodes", () => {
+    const first = input();
+    const second = input();
+    second.runId = "bee8847f-f6b9-44bd-88b3-7b1b005a108d";
+    second.seriesLabel = "Day 2";
+    expect(() => validateDialogueQuality([first, second])).toThrow("Repeated dialogue must be rewritten");
   });
 
   test("normalizes nested pages and missing dialogue before validation", () => {

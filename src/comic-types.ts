@@ -212,6 +212,46 @@ export function selectComicBackground(runId: string): ComicBackgroundProfile {
   return BACKGROUND_PROFILES[stableHash(`background:${runId}`) % BACKGROUND_PROFILES.length]!;
 }
 
+const LOW_SIGNAL_DIALOGUE = new Set([
+  "this ends now",
+  "it ends here",
+  "it is over",
+  "so be it",
+  "not yet",
+  "hold the line",
+  "i see the opening",
+  "then we face it together",
+  "you cannot stop me",
+  "you cannot stop us",
+  "we finish this together",
+  "the result is ours to face",
+]);
+
+function dialogueFingerprint(text: string): string {
+  return text.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+export function validateDialogueQuality(inputs: ComicPublishInput[]): void {
+  const seen = new Map<string, string>();
+  for (const input of inputs) {
+    for (const page of input.pages) {
+      for (const panel of page.panels) {
+        for (const dialogue of panel.dialogue) {
+          const fingerprint = dialogueFingerprint(dialogue.text);
+          if (LOW_SIGNAL_DIALOGUE.has(fingerprint)) {
+            throw new Error(`Generic dialogue must be rewritten in ${input.seriesLabel ?? input.story.title}: “${dialogue.text}”.`);
+          }
+          const firstUse = seen.get(fingerprint);
+          if (firstUse) {
+            throw new Error(`Repeated dialogue must be rewritten: “${dialogue.text}” repeats ${firstUse}.`);
+          }
+          seen.set(fingerprint, `${input.seriesLabel ?? input.story.title}, page ${page.pageNumber}`);
+        }
+      }
+    }
+  }
+}
+
 export function validateComicInput(input: ComicPublishInput): void {
   if (input.confirmed !== true) throw new Error("Comic rendering and Discord delivery require confirmed=true.");
   if (!/^[0-9a-f-]{36}$/i.test(input.runId)) throw new Error("runId must be a simulator UUID.");
@@ -231,7 +271,7 @@ export function validateComicInput(input: ComicPublishInput): void {
     safeText(direction.deckName, 1, 300, "persona deckName");
     safeText(direction.commanderName, 1, 300, "persona commanderName");
     safeText(direction.role, 3, 500, `${direction.commanderName} role`);
-    safeText(direction.voice, 3, 500, `${direction.commanderName} voice`);
+    safeText(direction.voice, 20, 500, `${direction.commanderName} voice`);
     const deckKey = direction.deckName.trim().toLocaleLowerCase();
     if (deckNames.has(deckKey)) throw new Error(`Duplicate deck direction: ${direction.deckName}.`);
     deckNames.add(deckKey);
@@ -281,6 +321,7 @@ export function validateComicInput(input: ComicPublishInput): void {
   if (gameplayCueCount < input.pages.length) throw new Error("The comic must contain at least one factual gameplay cue per page.");
   if (dialogueCount < input.pages.length) throw new Error("The comic must average at least one dialogue line per page.");
   rejectDeckNamesAsCharacters(input);
+  validateDialogueQuality([input]);
 }
 
 export function composePagePrompt(

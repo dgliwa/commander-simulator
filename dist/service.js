@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { ComicPublisher } from "./comic-publisher.js";
-import { normalizeComicInput, validateComicInput } from "./comic-types.js";
+import { normalizeComicInput, validateComicInput, validateDialogueQuality } from "./comic-types.js";
 import { SeasonCoverPublisher } from "./season-cover-publisher.js";
 import { runForge } from "./forge.js";
 import { FORGE_PERSONAS } from "./types.js";
@@ -239,6 +239,7 @@ export class CommanderSimulatorService {
             validateComicInput(comic);
             return { dayNumber: episode.dayNumber, runId: game.runId, comic };
         });
+        validateDialogueQuality(planned.map((episode) => episode.comic));
         this.database.saveSeasonPlan(season.id, planned);
         const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
         let coverPublication;

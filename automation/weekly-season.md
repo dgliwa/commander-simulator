@@ -30,9 +30,17 @@ Whole-season planning:
 3. Use this dramatic progression: introduction, first rivalry, setback/discovery, midpoint reversal, consequences/alliances, approach to finale, finale/aftermath.
 4. Bind day N to game N. Every page needs at least one concrete factual `gameplayCue` from that run and every episode needs at least two visibly distinct settings.
 5. Write one detailed continuity guide reused verbatim across all seven episodes. Define exact visual appearance, silhouette, clothing, equipment, scale, color accents, voice, injuries, recurring locations, weather progression, and props for all six commanders. The renderer locks medium and background style by season automatically.
-6. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters.
-7. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
-8. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
-9. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
+6. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters. Give each participant a concrete voice recipe: preferred sentence length and rhythm, characteristic diction, worldview, humor or lack of it, what they avoid saying, and how they behave under pressure. Voices must be distinguishable even without speaker labels.
+7. Rewrite the entire season's dialogue as one pass before submission:
+   - Keep speech sparse; silence and physical reactions are preferable to filler.
+   - Every line must perform a dramatic action: pressure, evade, bargain, provoke, joke, confess, reveal, refuse, mourn, or decide.
+   - Use subtext, interruptions, callbacks to specific prior events, asymmetrical exchanges, and character-specific observations.
+   - Never have a character narrate visible action, summarize the plot, explain a mechanic, or announce a generic emotion.
+   - Reject generic fantasy lines such as “This ends now,” “You cannot stop me,” “So be it,” “Not yet,” or interchangeable declarations about fate, victory, and power.
+   - Do not reuse a line, catchphrase, threat, reaction, sentence opening, or exchange structure anywhere across the seven episodes.
+   - Read dialogue alone without speaker names; revise any line that could be spoken unchanged by another commander.
+8. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
+9. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
+10. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
 
 Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.
