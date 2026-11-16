@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 import { writeManifest } from "./comic-renderer.js";
 import { SeasonCoverPublisher, readSeasonCoverWorkerRequest } from "./season-cover-publisher.js";
 import { SeasonCoverRenderer } from "./season-cover-renderer.js";
+import { queueEpisodeOneAfterCover } from "./season-lifecycle.js";
 
 const requestPath = process.argv[2];
 if (!requestPath) throw new Error("Season cover worker requires a request path.");
@@ -10,6 +11,13 @@ try {
   const request = readSeasonCoverWorkerRequest(requestPath);
   const renderer = new SeasonCoverRenderer(request.comicRoot, request.discordTarget, request.openclawCommand);
   await renderer.publish(request.input);
+  if (request.seasonLifecycle) {
+    try {
+      queueEpisodeOneAfterCover(request.seasonLifecycle, request.comicRoot, request.discordTarget, request.openclawCommand);
+    } catch (error) {
+      console.error("Episode 1 queueing failed after season-cover delivery:", error);
+    }
+  }
 } catch (error) {
   try {
     const request = readSeasonCoverWorkerRequest(requestPath);

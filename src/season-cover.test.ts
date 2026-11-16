@@ -89,8 +89,10 @@ describe("Season cover", () => {
       launches.push(requestPath);
       return 4242;
     });
-    expect(publisher.enqueue(input())).toMatchObject({ accepted: true, status: "queued", workerPid: 4242 });
-    expect(publisher.enqueue(input())).toMatchObject({ accepted: false, status: "queued", workerPid: 4242 });
+    const lifecycle = { databasePath: "/state/simulator.sqlite", magicDatabasePath: "/state/magic.sqlite", seasonId: "00000000-0000-4000-8000-000000000001" };
+    expect(publisher.enqueue(input(), undefined, lifecycle)).toMatchObject({ accepted: true, status: "queued", workerPid: 4242 });
+    expect(publisher.enqueue(input(), undefined, lifecycle)).toMatchObject({ accepted: false, status: "queued", workerPid: 4242 });
     expect(launches).toHaveLength(1);
+    expect(JSON.parse(readFileSync(launches[0]!, "utf8")).seasonLifecycle).toEqual(lifecycle);
   });
 });

@@ -1,6 +1,7 @@
 import { join, resolve } from "node:path";
 import { ComicPublisher, readWorkerRequest } from "./comic-publisher.js";
 import { ComicRenderer, writeManifest } from "./comic-renderer.js";
+import { reconcileDeliveredEpisode } from "./season-lifecycle.js";
 const requestPath = process.argv[2];
 if (!requestPath)
     throw new Error("Comic worker requires a request path.");
@@ -8,6 +9,14 @@ try {
     const request = readWorkerRequest(requestPath);
     const renderer = new ComicRenderer(request.comicRoot, request.discordTarget, request.openclawCommand);
     await renderer.publish(request.input);
+    if (request.seasonLifecycle) {
+        try {
+            reconcileDeliveredEpisode(request.seasonLifecycle, request.comicRoot);
+        }
+        catch (error) {
+            console.error("Season lifecycle reconciliation failed after comic delivery:", error);
+        }
+    }
 }
 catch (error) {
     try {

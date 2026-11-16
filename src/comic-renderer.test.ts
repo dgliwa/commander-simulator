@@ -223,11 +223,13 @@ describe("ComicRenderer", () => {
       launches.push(requestPath);
       return 4242;
     });
-    const first = publisher.enqueue(input());
-    const second = publisher.enqueue(input());
+    const lifecycle = { databasePath: "/state/simulator.sqlite", magicDatabasePath: "/state/magic.sqlite", seasonId: "00000000-0000-4000-8000-000000000002", dayNumber: 1 };
+    const first = publisher.enqueue(input(), undefined, lifecycle);
+    const second = publisher.enqueue(input(), undefined, lifecycle);
     expect(first).toMatchObject({ accepted: true, status: "queued", workerPid: 4242 });
     expect(second).toMatchObject({ accepted: false, status: "queued", workerPid: 4242 });
     expect(launches).toHaveLength(1);
+    expect(JSON.parse(readFileSync(launches[0]!, "utf8")).seasonLifecycle).toEqual(lifecycle);
   });
 });
 

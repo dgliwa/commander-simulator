@@ -17,7 +17,7 @@ try {
         SELECT 1 FROM season_episodes se
         WHERE se.season_id=cs.id AND se.status IN ('planned','failed','queued','running')
       )
-    ORDER BY cs.created_at DESC
+    ORDER BY cs.created_at ASC
     LIMIT 1
   `).get();
   if (season) process.stdout.write(`${season.id}\n`);

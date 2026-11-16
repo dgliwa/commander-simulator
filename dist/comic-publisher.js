@@ -15,7 +15,7 @@ export class ComicPublisher {
         this.openclawCommand = openclawCommand;
         this.launchWorker = launchWorker;
     }
-    enqueue(draft, signal) {
+    enqueue(draft, signal, seasonLifecycle) {
         const input = normalizeComicInput(draft);
         validateComicInput(input);
         validateDiscordTarget(this.discordTarget);
@@ -34,6 +34,7 @@ export class ComicPublisher {
             discordTarget: this.discordTarget,
             openclawCommand: this.openclawCommand,
             input,
+            ...(seasonLifecycle ? { seasonLifecycle } : {}),
         };
         writeOwnerOnly(requestPath, request);
         const queuedAt = new Date().toISOString();
