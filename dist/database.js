@@ -243,6 +243,10 @@ export class SimulatorDatabase {
             completedAt: row.completed_at ? String(row.completed_at) : undefined,
         };
     }
+    findSeasonByKey(seasonKey) {
+        const row = this.db.prepare("SELECT id FROM comic_seasons WHERE season_key=?").get(seasonKey);
+        return row ? this.getSeason(String(row.id)) : undefined;
+    }
     listSeasons(limit = 20) {
         return this.db.prepare("SELECT id FROM comic_seasons ORDER BY created_at DESC LIMIT ?").all(limit).map(row => this.getSeason(String(row.id)));
     }

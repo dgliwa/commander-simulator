@@ -142,6 +142,9 @@ describe("CommanderSimulatorService", () => {
         opponentPublicIds: ["gen-a", "gen-b", "gen-c", "gen-d"],
       });
       const seasonId = created.season.id;
+      expect((service.seasonStatus(undefined, "2026-w44") as any).season.id).toBe(seasonId);
+      expect(service.seasonStatus(undefined, "2026-w45")).toEqual({ found: false, seasonKey: "2026-w45" });
+      expect(() => service.seasonStatus(seasonId, "2026-w44")).toThrow(/either seasonId or seasonKey/);
       expect(created.cast.heroes.every((deck: any) => !deck.tags.includes("generated"))).toBe(true);
       expect(created.cast.opponents.every((deck: any) => deck.tags.includes("generated") && deck.tags.includes("not-owned"))).toBe(true);
 

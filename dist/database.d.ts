@@ -27,6 +27,7 @@ export declare class SimulatorDatabase {
         styleSeed?: string;
     }, now?: string): ComicSeason;
     getSeason(id: string): ComicSeason;
+    findSeasonByKey(seasonKey: string): ComicSeason | undefined;
     listSeasons(limit?: number): ComicSeason[];
     updateSeasonStatus(id: string, status: SeasonStatus, now?: string): ComicSeason;
     addSeasonGame(input: Omit<SeasonGame, "createdAt">, now?: string): SeasonGame;

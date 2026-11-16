@@ -301,8 +301,14 @@ export class CommanderSimulatorService {
     return { queued: true, dayNumber: next.dayNumber, publication, ...this.seasonDetails(season.id) };
   }
 
-  seasonStatus(seasonId?: string) {
-    return seasonId ? this.seasonDetails(seasonId) : { seasons: this.database.listSeasons().map(season => this.seasonDetails(season.id)) };
+  seasonStatus(seasonId?: string, seasonKey?: string) {
+    if (seasonId && seasonKey) throw new Error("Provide either seasonId or seasonKey, not both.");
+    if (seasonId) return this.seasonDetails(seasonId);
+    if (seasonKey) {
+      const season = this.database.findSeasonByKey(seasonKey);
+      return season ? this.seasonDetails(season.id) : { found: false, seasonKey };
+    }
+    return { seasons: this.database.listSeasons().map(season => this.seasonDetails(season.id)) };
   }
 
   async dailyGame(input: { confirmed: true; seed?: number; timeoutSeconds?: number }) {

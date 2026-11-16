@@ -190,9 +190,9 @@ export default defineToolPlugin({
     }),
     tool({
       name: "commander_season_status",
-      description: "Inspect one comic season or list recent seasons, including cover status, cast provenance, factual game runs, episode progress, and the next required action.",
-      parameters: Type.Object({ seasonId: Type.Optional(id) }, { additionalProperties: false }),
-      execute: async ({ seasonId }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.seasonStatus(seasonId)); },
+      description: "Inspect one comic season by ID or stable season key, or list recent seasons, including cover status, cast provenance, factual game runs, episode progress, and the next required action.",
+      parameters: Type.Object({ seasonId: Type.Optional(id), seasonKey: Type.Optional(Type.String({ pattern: "^[a-z0-9][a-z0-9_-]{0,99}$" })) }, { additionalProperties: false }),
+      execute: async ({ seasonId, seasonKey }, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.seasonStatus(seasonId, seasonKey)); },
     }),
     tool({
       name: "commander_daily_game",

@@ -4,7 +4,7 @@ This is an autonomous scheduled workflow. Treat simulation outcomes as immutable
 
 Resume before creating:
 1. Derive `seasonKey` as `season-YYYY-wNN` for the current America/Chicago ISO week.
-2. Call `commander_season_status`. If that key already exists, resume its `nextAction` instead of creating another season.
+2. Call `commander_season_status` with that exact `seasonKey`. If it exists, resume its `nextAction` instead of creating another season.
 3. If its next action is `publish_next` or `complete`, stop successfully; daily publication owns those states.
 
 If no season exists:
@@ -42,5 +42,7 @@ Whole-season planning:
 8. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
 9. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
 10. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
+
+Do not stop after selecting commanders or searching for cards. Continue until the current season has seven stored games and seven stored episodes, resuming durable partial progress as needed. A wrapper independently verifies these milestones and marks the scheduled run failed when they are absent.
 
 Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.
