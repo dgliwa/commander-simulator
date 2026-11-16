@@ -68,6 +68,7 @@ export interface ComicBackgroundProfile {
 export declare function normalizeComicInput(input: ComicPublishDraft): ComicPublishInput;
 export declare function selectComicStyle(runId: string): ComicStyleProfile;
 export declare function selectComicBackground(runId: string): ComicBackgroundProfile;
+export declare function validateDialogueQuality(inputs: ComicPublishInput[]): void;
 export declare function validateComicInput(input: ComicPublishInput): void;
 export declare function composePagePrompt(input: ComicPublishInput, page: ComicPageInput, style?: ComicStyleProfile, background?: ComicBackgroundProfile): string;
 export {};

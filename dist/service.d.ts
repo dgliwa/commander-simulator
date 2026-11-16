@@ -405,7 +405,7 @@ export declare class CommanderSimulatorService {
         dayNumber: number;
         publication: Record<string, unknown>;
     };
-    seasonStatus(seasonId?: string): {
+    seasonStatus(seasonId?: string, seasonKey?: string): {
         season: import("./types.js").ComicSeason;
         cast: {
             heroes: {
@@ -440,6 +440,10 @@ export declare class CommanderSimulatorService {
         }[];
         cover: Record<string, unknown>;
         nextAction: string;
+    } | {
+        found: boolean;
+        seasonKey: string;
+        seasons?: undefined;
     } | {
         seasons: {
             season: import("./types.js").ComicSeason;
@@ -477,6 +481,8 @@ export declare class CommanderSimulatorService {
             cover: Record<string, unknown>;
             nextAction: string;
         }[];
+        found?: undefined;
+        seasonKey?: undefined;
     };
     dailyGame(input: {
         confirmed: true;

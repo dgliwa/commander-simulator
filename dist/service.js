@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { ComicPublisher } from "./comic-publisher.js";
-import { normalizeComicInput, validateComicInput } from "./comic-types.js";
+import { normalizeComicInput, validateComicInput, validateDialogueQuality } from "./comic-types.js";
 import { SeasonCoverPublisher } from "./season-cover-publisher.js";
 import { runForge } from "./forge.js";
 import { FORGE_PERSONAS } from "./types.js";
@@ -239,6 +239,7 @@ export class CommanderSimulatorService {
             validateComicInput(comic);
             return { dayNumber: episode.dayNumber, runId: game.runId, comic };
         });
+        validateDialogueQuality(planned.map((episode) => episode.comic));
         this.database.saveSeasonPlan(season.id, planned);
         const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
         let coverPublication;
@@ -291,8 +292,16 @@ export class CommanderSimulatorService {
         this.database.updateEpisodeStatus(season.id, next.dayNumber, "queued");
         return { queued: true, dayNumber: next.dayNumber, publication, ...this.seasonDetails(season.id) };
     }
-    seasonStatus(seasonId) {
-        return seasonId ? this.seasonDetails(seasonId) : { seasons: this.database.listSeasons().map(season => this.seasonDetails(season.id)) };
+    seasonStatus(seasonId, seasonKey) {
+        if (seasonId && seasonKey)
+            throw new Error("Provide either seasonId or seasonKey, not both.");
+        if (seasonId)
+            return this.seasonDetails(seasonId);
+        if (seasonKey) {
+            const season = this.database.findSeasonByKey(seasonKey);
+            return season ? this.seasonDetails(season.id) : { found: false, seasonKey };
+        }
+        return { seasons: this.database.listSeasons().map(season => this.seasonDetails(season.id)) };
     }
     async dailyGame(input) {
         const seed = input.seed === undefined ? dailySeed() : integer(input.seed, 0, 2_147_483_647, "seed");

@@ -73,7 +73,7 @@ Plugin data defaults to:
 
 The Magic Workspace registry defaults to `~/.openclaw/plugins/magic-workspace/magic.sqlite`.
 
-Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The tool validates a structured story plan, panel beats, concise dialogue, persona voices, and a repeated continuity guide, then queues an owner-only detached publisher and returns immediately. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
+Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The tool validates a structured story plan, panel beats, sparse voice-specific dialogue, concrete persona voice recipes, and a repeated continuity guide. Generic filler and repeated dialogue are rejected before an owner-only detached publisher is queued. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
 
 Completed comics expose a read-only, publication-safe projection for the blog publisher:
 

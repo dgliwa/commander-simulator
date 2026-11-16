@@ -244,6 +244,11 @@ export class SimulatorDatabase {
     };
   }
 
+  findSeasonByKey(seasonKey: string): ComicSeason | undefined {
+    const row = this.db.prepare("SELECT id FROM comic_seasons WHERE season_key=?").get(seasonKey) as Row | undefined;
+    return row ? this.getSeason(String(row.id)) : undefined;
+  }
+
   listSeasons(limit = 20): ComicSeason[] {
     return (this.db.prepare("SELECT id FROM comic_seasons ORDER BY created_at DESC LIMIT ?").all(limit) as Row[]).map(row => this.getSeason(String(row.id)));
   }
