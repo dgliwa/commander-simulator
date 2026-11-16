@@ -153,7 +153,7 @@ describe("CommanderSimulatorService", () => {
         expect(result.stored).toBe(true);
       }
       const status = service.seasonStatus(seasonId) as any;
-      expect(status.season.status).toBe("awaiting_plan");
+      expect(status.season.status).toBe("awaiting_script");
       expect(status.games).toHaveLength(7);
       expect(status.games.slice(0, 6).map((game: any) => game.participantPublicIds.slice(2))).toEqual([
         ["gen-a", "gen-b"], ["gen-c", "gen-d"], ["gen-a", "gen-c"],
@@ -193,7 +193,40 @@ describe("CommanderSimulatorService", () => {
           })),
         })),
       }));
-      const planned = service.planSeason({ seasonId, confirmed: true, episodes });
+      expect(() => service.planSeason({ seasonId, confirmed: true, episodes })).toThrow(/complete season script/);
+const scriptEpisodes = episodes.map((episode: any) => ({
+  dayNumber: episode.dayNumber,
+  title: episode.story.title,
+  summary: episode.summary,
+  scenes: episode.pages.map((page: any) => ({
+    sceneNumber: page.pageNumber,
+    title: page.title,
+    setting: page.setting,
+    storyBeat: page.storyBeat,
+    backgroundElements: page.backgroundElements,
+    gameplayCues: page.panels.flatMap((panel: any) => panel.gameplayCue ? [panel.gameplayCue] : []),
+    dialogue: page.panels.flatMap((panel: any) => panel.dialogue),
+  })),
+}));
+const scripted = service.scriptSeason({
+  seasonId,
+  confirmed: true,
+  premise: episodes[0]!.story.premise,
+  dramaticQuestion: episodes[0]!.story.dramaticQuestion,
+  continuityGuide: episodes[0]!.continuityGuide,
+  characters: ["deck-a", "deck-b", "gen-a", "gen-b", "gen-c", "gen-d"].map(publicId => ({
+    publicId,
+    role: publicId.startsWith("gen-") ? "A generated rival who pressures the protagonists" : "A protagonist whose survival is not guaranteed",
+    voice: "Distinct, concise, emotionally consistent, and grounded in the ongoing conflict",
+  })),
+  episodes: scriptEpisodes,
+});
+expect(scripted.season.status).toBe("awaiting_plan");
+expect(scripted.nextAction).toBe("plan");
+const rewritten = structuredClone(episodes);
+rewritten[0]!.pages[0]!.panels[1]!.dialogue[0]!.text = "A later page rewrite must not replace the approved screenplay line.";
+expect(() => service.planSeason({ seasonId, confirmed: true, episodes: rewritten })).toThrow(/scripted dialogue exactly/);
+const planned = service.planSeason({ seasonId, confirmed: true, episodes });
       expect(planned.season.status).toBe("ready");
       expect(planned.episodes).toHaveLength(7);
       expect(planned.episodes.every((episode: any) => episode.status === "planned")).toBe(true);

@@ -2,7 +2,7 @@ import { type ComicPublishDraft } from "./comic-types.js";
 import { SimulatorDatabase } from "./database.js";
 import { MagicDeckSource } from "./magic-source.js";
 import type { SimulatorPaths } from "./paths.js";
-import { type ForgePersona } from "./types.js";
+import { type ForgePersona, type SeasonScriptEpisode } from "./types.js";
 export declare class CommanderSimulatorService {
     private readonly database;
     private readonly magic;
@@ -146,6 +146,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
     };
     simulateNextSeasonGame(input: {
@@ -195,6 +200,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
         stored: boolean;
         seasonId?: undefined;
@@ -203,6 +213,59 @@ export declare class CommanderSimulatorService {
         run?: undefined;
         retry?: undefined;
     }>;
+    scriptSeason(input: {
+        seasonId: string;
+        confirmed: true;
+        premise: string;
+        dramaticQuestion: string;
+        continuityGuide: string;
+        characters: Array<{
+            publicId: string;
+            role: string;
+            voice: string;
+        }>;
+        episodes: SeasonScriptEpisode[];
+    }): {
+        season: import("./types.js").ComicSeason;
+        cast: {
+            heroes: {
+                publicId: string;
+                name: string;
+                commanders: string[];
+                tags: string[];
+            }[];
+            opponents: {
+                publicId: string;
+                name: string;
+                commanders: string[];
+                tags: string[];
+            }[];
+        };
+        games: {
+            run: import("./types.js").SimulationRun;
+            seasonId: string;
+            gameNumber: number;
+            label: string;
+            podId: string;
+            runId: string;
+            participantPublicIds: string[];
+            createdAt: string;
+        }[];
+        episodes: {
+            seasonId: string;
+            dayNumber: number;
+            runId: string;
+            status: import("./types.js").SeasonEpisodeStatus;
+            publishedAt?: string;
+        }[];
+        cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
+        nextAction: string;
+    };
     planSeason(input: {
         seasonId: string;
         confirmed: true;
@@ -248,6 +311,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
     };
     publishNextSeasonEpisode(input: {
@@ -287,6 +355,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
         queued: boolean;
         publicationType: string;
@@ -325,6 +398,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
         queued: boolean;
         publicationType: string;
@@ -363,6 +441,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
         queued: boolean;
         reason: string;
@@ -400,6 +483,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
         queued: boolean;
         dayNumber: number;
@@ -439,6 +527,11 @@ export declare class CommanderSimulatorService {
             publishedAt?: string;
         }[];
         cover: Record<string, unknown>;
+        script: {
+            createdAt: string;
+            episodeCount: number;
+            characterCount: number;
+        } | undefined;
         nextAction: string;
     } | {
         found: boolean;
@@ -479,6 +572,11 @@ export declare class CommanderSimulatorService {
                 publishedAt?: string;
             }[];
             cover: Record<string, unknown>;
+            script: {
+                createdAt: string;
+                episodeCount: number;
+                characterCount: number;
+            } | undefined;
             nextAction: string;
         }[];
         found?: undefined;

@@ -5,6 +5,7 @@ import { ComicPublisher } from "./comic-publisher.js";
 import { normalizeComicInput, validateComicInput, validateDialogueQuality } from "./comic-types.js";
 import { SeasonCoverPublisher } from "./season-cover-publisher.js";
 import { runForge } from "./forge.js";
+import { validateSeasonScript, validateScriptedComics } from "./season-script.js";
 import { FORGE_PERSONAS } from "./types.js";
 export class CommanderSimulatorService {
     database;
@@ -211,14 +212,43 @@ export class CommanderSimulatorService {
         }
         this.database.addSeasonGame({ seasonId: season.id, gameNumber, label, podId: pod.id, runId: run.id, participantPublicIds: ids });
         if (gameNumber === 7)
-            this.database.updateSeasonStatus(season.id, "awaiting_plan");
+            this.database.updateSeasonStatus(season.id, "awaiting_script");
         return { stored: true, ...this.seasonDetails(season.id), latestRun: run };
+    }
+    scriptSeason(input) {
+        const season = this.database.getSeason(input.seasonId);
+        const games = this.database.getSeasonGames(season.id);
+        if (games.length !== 7)
+            throw new Error("All seven season games must be completed before scripting the story.");
+        if (this.database.getSeasonEpisodes(season.id).length)
+            throw new Error("This season already has planned comics and cannot be rescripted.");
+        const castIds = [...season.heroPublicIds, ...season.opponentPublicIds];
+        const draft = {
+            premise: input.premise,
+            dramaticQuestion: input.dramaticQuestion,
+            continuityGuide: input.continuityGuide,
+            characters: input.characters.map(character => {
+                const deck = this.magic.get(character.publicId);
+                return {
+                    ...character,
+                    deckName: deck.name,
+                    commanderName: commanderNames(deck)[0] ?? deck.name,
+                };
+            }),
+            episodes: input.episodes,
+        };
+        const script = validateSeasonScript(draft, castIds);
+        this.database.saveSeasonScript(season.id, script);
+        return this.seasonDetails(season.id);
     }
     planSeason(input) {
         const season = this.database.getSeason(input.seasonId);
         const games = this.database.getSeasonGames(season.id);
         if (games.length !== 7)
             throw new Error("All seven season games must be completed before planning episodes.");
+        const script = this.database.getSeasonScript(season.id);
+        if (!script)
+            throw new Error("Store the complete season script before breaking it into comic pages.");
         if (input.episodes.length !== 7 || new Set(input.episodes.map(episode => episode.dayNumber)).size !== 7) {
             throw new Error("A season plan requires exactly one episode for each day 1 through 7.");
         }
@@ -240,6 +270,16 @@ export class CommanderSimulatorService {
             return { dayNumber: episode.dayNumber, runId: game.runId, comic };
         });
         validateDialogueQuality(planned.map((episode) => episode.comic));
+        planned.forEach((episode, index) => {
+            const expectedCharacters = games[index].participantPublicIds.map(publicId => script.characters.find(character => character.publicId === publicId));
+            const actualDirections = episode.comic.story.personaDirections;
+            if (actualDirections.length !== expectedCharacters.length || expectedCharacters.some(character => {
+                const direction = actualDirections.find(item => item.commanderName === character.commanderName);
+                return !direction || direction.deckName !== character.deckName || direction.role !== character.role || direction.voice !== character.voice;
+            }))
+                throw new Error(`Day ${episode.dayNumber} persona directions must use the stored script voices for its four participants.`);
+        });
+        validateScriptedComics(script, planned);
         this.database.saveSeasonPlan(season.id, planned);
         const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
         let coverPublication;
@@ -340,6 +380,7 @@ export class CommanderSimulatorService {
     seasonDetails(seasonId) {
         const season = this.database.getSeason(seasonId);
         const games = this.database.getSeasonGames(seasonId).map(game => ({ ...game, run: this.database.getRun(game.runId) }));
+        const script = this.database.getSeasonScript(seasonId);
         const episodes = this.database.getSeasonEpisodes(seasonId).map(({ comic: _comic, ...episode }) => episode);
         const cover = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand).status(season.id);
         return {
@@ -351,7 +392,8 @@ export class CommanderSimulatorService {
             games,
             episodes,
             cover,
-            nextAction: games.length < 7 ? "simulate_next" : episodes.length < 7 ? "plan" : episodes.some(episode => episode.status !== "published") ? "publish_next" : "complete",
+            script: script ? { createdAt: script.createdAt, episodeCount: script.episodes.length, characterCount: script.characters.length } : undefined,
+            nextAction: games.length < 7 ? "simulate_next" : episodes.length === 7 ? (episodes.some(episode => episode.status !== "published") ? "publish_next" : "complete") : !script ? "script" : "plan",
         };
     }
     seasonCoverInput(seasonId, comic) {

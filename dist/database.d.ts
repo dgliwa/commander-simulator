@@ -1,5 +1,5 @@
 import type { ComicPublishInput } from "./comic-types.js";
-import type { ComicSeason, Pod, PodParticipant, SeasonEpisode, SeasonEpisodeStatus, SeasonGame, SeasonStatus, SimulationGame, SimulationRun } from "./types.js";
+import type { ComicSeason, Pod, PodParticipant, SeasonEpisode, SeasonEpisodeStatus, SeasonGame, SeasonScript, SeasonStatus, SimulationGame, SimulationRun } from "./types.js";
 export declare class SimulatorDatabase {
     private readonly path;
     private readonly db;
@@ -32,6 +32,8 @@ export declare class SimulatorDatabase {
     updateSeasonStatus(id: string, status: SeasonStatus, now?: string): ComicSeason;
     addSeasonGame(input: Omit<SeasonGame, "createdAt">, now?: string): SeasonGame;
     getSeasonGames(seasonId: string): SeasonGame[];
+    saveSeasonScript(seasonId: string, script: Omit<SeasonScript, "seasonId" | "createdAt">, now?: string): SeasonScript;
+    getSeasonScript(seasonId: string): SeasonScript | undefined;
     saveSeasonPlan(seasonId: string, episodes: Array<{
         dayNumber: number;
         runId: string;

@@ -56,6 +56,7 @@
       "commander_simulate",
       "commander_season_create",
       "commander_season_simulate_next",
+      "commander_season_script",
       "commander_season_plan",
       "commander_season_publish_next",
       "commander_season_status",
