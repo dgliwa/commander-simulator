@@ -11,12 +11,14 @@ import {
   validateComicInput,
 } from "./comic-types.js";
 import { writeManifest } from "./comic-renderer.js";
+import type { SeasonLifecycleContext } from "./season-lifecycle-types.js";
 
 export interface WorkerRequest {
   comicRoot: string;
   discordTarget: string;
   openclawCommand: string;
   input: ComicPublishInput;
+  seasonLifecycle?: SeasonLifecycleContext;
 }
 
 export type ComicWorkerLauncher = (requestPath: string, logPath: string) => number;
@@ -29,7 +31,7 @@ export class ComicPublisher {
     private readonly launchWorker: ComicWorkerLauncher = launchDetachedWorker,
   ) {}
 
-  enqueue(draft: ComicPublishDraft, signal?: AbortSignal): Record<string, unknown> {
+  enqueue(draft: ComicPublishDraft, signal?: AbortSignal, seasonLifecycle?: SeasonLifecycleContext): Record<string, unknown> {
     const input = normalizeComicInput(draft);
     validateComicInput(input);
     validateDiscordTarget(this.discordTarget);
@@ -48,6 +50,7 @@ export class ComicPublisher {
       discordTarget: this.discordTarget,
       openclawCommand: this.openclawCommand,
       input,
+      ...(seasonLifecycle ? { seasonLifecycle } : {}),
     };
     writeOwnerOnly(requestPath, request);
     const queuedAt = new Date().toISOString();

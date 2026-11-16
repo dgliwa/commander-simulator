@@ -5,12 +5,14 @@ import { spawn } from "node:child_process";
 import { selectComicBackground, selectComicStyle } from "./comic-types.js";
 import { writeManifest } from "./comic-renderer.js";
 import { type SeasonCoverInput, validateSeasonCoverInput } from "./season-cover-types.js";
+import type { SeasonLifecycleContext } from "./season-lifecycle-types.js";
 
 export interface SeasonCoverWorkerRequest {
   comicRoot: string;
   discordTarget: string;
   openclawCommand: string;
   input: SeasonCoverInput;
+  seasonLifecycle?: SeasonLifecycleContext;
 }
 
 export type SeasonCoverWorkerLauncher = (requestPath: string, logPath: string) => number;
@@ -23,7 +25,7 @@ export class SeasonCoverPublisher {
     private readonly launchWorker: SeasonCoverWorkerLauncher = launchDetachedWorker,
   ) {}
 
-  enqueue(input: SeasonCoverInput, signal?: AbortSignal): Record<string, unknown> {
+  enqueue(input: SeasonCoverInput, signal?: AbortSignal, seasonLifecycle?: SeasonLifecycleContext): Record<string, unknown> {
     validateSeasonCoverInput(input);
     validateDiscordTarget(this.discordTarget);
     signal?.throwIfAborted();
@@ -41,6 +43,7 @@ export class SeasonCoverPublisher {
       discordTarget: this.discordTarget,
       openclawCommand: this.openclawCommand,
       input,
+      ...(seasonLifecycle ? { seasonLifecycle } : {}),
     };
     writeFileSync(requestPath, `${JSON.stringify(request, null, 2)}\n`, { mode: 0o600 });
     const queuedAt = new Date().toISOString();

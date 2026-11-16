@@ -277,7 +277,10 @@ export declare class CommanderSimulatorService {
             pages: NonNullable<ComicPublishDraft["pages"]>;
         }>;
     }): {
-        coverPublication: Record<string, unknown>;
+        coverPublication: {
+            status: string;
+            queued: boolean;
+        };
         season: import("./types.js").ComicSeason;
         cast: {
             heroes: {

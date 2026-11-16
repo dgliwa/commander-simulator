@@ -1,8 +1,9 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
+import { reconcileSeason } from "./season-lifecycle.js";
 import { projectSeason, runSeasonPublicationCli, scryfallCardUrl } from "./season-publication.js";
 
 const roots: string[] = [];
@@ -27,6 +28,8 @@ function fixture(status = "completed") {
 
   const db = new DatabaseSync(database);
   db.exec(`
+    CREATE TABLE simulator_metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+    INSERT INTO simulator_metadata VALUES('schema_version','3');
     CREATE TABLE comic_seasons(id TEXT PRIMARY KEY,season_key TEXT,title TEXT,status TEXT,hero_public_ids_json TEXT,opponent_public_ids_json TEXT,style_seed TEXT,created_at TEXT,updated_at TEXT,completed_at TEXT);
     CREATE TABLE season_games(season_id TEXT,game_number INTEGER,label TEXT,pod_id TEXT,run_id TEXT,participant_public_ids_json TEXT,created_at TEXT);
     CREATE TABLE season_episodes(season_id TEXT,day_number INTEGER,run_id TEXT,status TEXT,comic_json TEXT,published_at TEXT);
@@ -92,6 +95,14 @@ describe("Commander season publication projection", () => {
       turns: 11,
       keyMoments: ["Key play 1.", "Story beat 1."],
     });
+  });
+
+  it("deterministically finalizes delivered episodes and writes the season export", () => {
+    const f = fixture("publishing");
+    const result = reconcileSeason(f.database, f.magicDatabase, f.comicRoot, f.seasonId);
+    expect(result).toMatchObject({ status: "completed", publishedEpisodes: 7, activeEpisodes: 0 });
+    expect(result.exportPath).toBeDefined();
+    expect(existsSync(result.exportPath!)).toBe(true);
   });
 
   it("fails closed until the season is completed", () => {

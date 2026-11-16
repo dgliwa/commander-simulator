@@ -16,7 +16,7 @@ export class SeasonCoverPublisher {
         this.openclawCommand = openclawCommand;
         this.launchWorker = launchWorker;
     }
-    enqueue(input, signal) {
+    enqueue(input, signal, seasonLifecycle) {
         validateSeasonCoverInput(input);
         validateDiscordTarget(this.discordTarget);
         signal?.throwIfAborted();
@@ -34,6 +34,7 @@ export class SeasonCoverPublisher {
             discordTarget: this.discordTarget,
             openclawCommand: this.openclawCommand,
             input,
+            ...(seasonLifecycle ? { seasonLifecycle } : {}),
         };
         writeFileSync(requestPath, `${JSON.stringify(request, null, 2)}\n`, { mode: 0o600 });
         const queuedAt = new Date().toISOString();

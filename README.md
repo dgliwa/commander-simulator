@@ -22,6 +22,9 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - Exactly three stored scenes per day locking setting, dramatic beat, factual cues, and final dialogue before panel breakdown
 - Stored seven-episode comic plans bound to the screenplay and factual simulation runs
 - One locked art direction and continuity bible across all season episodes
+- One deterministic daily orchestrator that reconciles every unfinished season before selecting work
+- Oldest-unfinished publication ordering with automatic completion and an owner-only season export
+- Agentic season preparation only when no unfinished season exists, followed by fail-closed verification
 - Deterministic sequential comic rendering through the headless OpenClaw image CLI
 - Resumable page generation with validated owner-only PNGs and a durable prompt manifest
 - Commander-led comic narration with optional, sparse mechanical Easter eggs that read naturally in-world—even when the reference is missed—and no scoreboards, rules explanations, or game UI
@@ -97,6 +100,8 @@ node dist/publication-cli.js \
 ```
 
 The season export contains the cover and every comic page in reading order, commander names with Scryfall links, season win/loss/draw records, and public match summaries plus key gameplay moments. It fails closed while a season or any episode remains incomplete.
+
+`run-daily-season-orchestrator.sh` is the sole scheduled lifecycle entry point. It deterministically reconciles renderer manifests, finalizes and exports completed seasons, selects the oldest unfinished season, invokes the agentic preparation workflow only when no publishable season exists, and queues the next artifact. Cover delivery deterministically queues episode 1; episode delivery reconciles durable state immediately, and episode 7 completion finalizes and exports the season. These callbacks are idempotent, while the next daily run remains the recovery path after interruption.
 
 ## Safety model
 

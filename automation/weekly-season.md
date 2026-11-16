@@ -42,8 +42,8 @@ Whole-season planning:
    - Read dialogue alone without speaker names; revise any line that could be spoken unchanged by another commander.
 9. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
 10. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
-11. Storing the comic plan automatically queues one full-bleed season cover using the locked continuity and art direction.
+11. Storing the comic plan leaves the season durably ready. The deterministic daily orchestrator—not this creative workflow—queues the full-bleed cover. Successful cover delivery then queues episode 1 automatically using the locked continuity and art direction.
 
 Do not stop after selecting commanders or searching for cards. Continue until the current season has seven stored games, one stored seven-episode screenplay, and seven stored comic episodes, resuming durable partial progress as needed. A wrapper independently verifies these milestones and marks the scheduled run failed when they are absent.
 
-Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.
+Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, and confirmation that the screenplay and seven episodes are stored. Do not queue the cover or publish episode 1; the deterministic daily orchestrator owns publication.

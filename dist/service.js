@@ -281,15 +281,7 @@ export class CommanderSimulatorService {
         });
         validateScriptedComics(script, planned);
         this.database.saveSeasonPlan(season.id, planned);
-        const coverPublisher = new SeasonCoverPublisher(this.paths.comicDirectory, this.options.comicDiscordTarget ?? "", this.options.openclawCommand);
-        let coverPublication;
-        try {
-            coverPublication = coverPublisher.enqueue(this.seasonCoverInput(season.id, planned[0].comic));
-        }
-        catch (error) {
-            coverPublication = { status: "failed_to_queue", error: error instanceof Error ? error.message : String(error) };
-        }
-        return { ...this.seasonDetails(season.id), coverPublication };
+        return { ...this.seasonDetails(season.id), coverPublication: { status: "planned", queued: false } };
     }
     publishNextSeasonEpisode(input) {
         const season = this.database.getSeason(input.seasonId);
@@ -303,7 +295,7 @@ export class CommanderSimulatorService {
             return { queued: false, publicationType: "cover", reason: "The season cover is already rendering.", ...this.seasonDetails(season.id) };
         }
         if (coverStatus.status !== "completed") {
-            const coverPublication = coverPublisher.enqueue(this.seasonCoverInput(season.id, episodes[0].comic));
+            const coverPublication = coverPublisher.enqueue(this.seasonCoverInput(season.id, episodes[0].comic), undefined, { databasePath: this.paths.database, magicDatabasePath: this.paths.magicDatabase, seasonId: season.id });
             return { queued: true, publicationType: "cover", coverPublication, ...this.seasonDetails(season.id) };
         }
         for (const episode of episodes) {
@@ -328,7 +320,7 @@ export class CommanderSimulatorService {
             return { queued: false, reason: "All seven episodes are published.", ...this.seasonDetails(season.id) };
         }
         this.database.updateSeasonStatus(season.id, "publishing");
-        const publication = publisher.enqueue(next.comic);
+        const publication = publisher.enqueue(next.comic, undefined, { databasePath: this.paths.database, magicDatabasePath: this.paths.magicDatabase, seasonId: season.id, dayNumber: next.dayNumber });
         this.database.updateEpisodeStatus(season.id, next.dayNumber, "queued");
         return { queued: true, dayNumber: next.dayNumber, publication, ...this.seasonDetails(season.id) };
     }
