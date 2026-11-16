@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { ComicPublishInput } from "./comic-types.js";
-import type { ComicSeason, Pod, PodParticipant, SeasonEpisode, SeasonEpisodeStatus, SeasonGame, SeasonStatus, SimulationGame, SimulationRun } from "./types.js";
+import type { ComicSeason, Pod, PodParticipant, SeasonEpisode, SeasonEpisodeStatus, SeasonGame, SeasonScript, SeasonStatus, SimulationGame, SimulationRun } from "./types.js";
 
 type Row = Record<string, unknown>;
 
@@ -21,8 +21,8 @@ export class SimulatorDatabase {
       PRAGMA journal_mode=WAL;
       PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS simulator_metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
-      INSERT OR IGNORE INTO simulator_metadata(key,value) VALUES('schema_version','2');
-      UPDATE simulator_metadata SET value='2' WHERE key='schema_version';
+      INSERT OR IGNORE INTO simulator_metadata(key,value) VALUES('schema_version','3');
+      UPDATE simulator_metadata SET value='3' WHERE key='schema_version';
       CREATE TABLE IF NOT EXISTS pods(
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -83,6 +83,11 @@ export class SimulatorDatabase {
         participant_public_ids_json TEXT NOT NULL,
         created_at TEXT NOT NULL,
         PRIMARY KEY(season_id,game_number)
+      );
+      CREATE TABLE IF NOT EXISTS season_scripts(
+        season_id TEXT PRIMARY KEY REFERENCES comic_seasons(id) ON DELETE CASCADE,
+        script_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS season_episodes(
         season_id TEXT NOT NULL REFERENCES comic_seasons(id) ON DELETE CASCADE,
@@ -278,6 +283,26 @@ export class SimulatorDatabase {
       participantPublicIds: JSON.parse(String(row.participant_public_ids_json)),
       createdAt: String(row.created_at),
     }));
+  }
+
+  saveSeasonScript(seasonId: string, script: Omit<SeasonScript, "seasonId" | "createdAt">, now = new Date().toISOString()): SeasonScript {
+    this.getSeason(seasonId);
+    const existing = this.db.prepare("SELECT season_id FROM season_scripts WHERE season_id=?").get(seasonId);
+    if (existing) throw new Error("This season already has a stored script.");
+    this.db.prepare("INSERT INTO season_scripts(season_id,script_json,created_at) VALUES(?,?,?)")
+      .run(seasonId, JSON.stringify(script), now);
+    this.updateSeasonStatus(seasonId, "awaiting_plan", now);
+    return this.getSeasonScript(seasonId)!;
+  }
+
+  getSeasonScript(seasonId: string): SeasonScript | undefined {
+    const row = this.db.prepare("SELECT script_json,created_at FROM season_scripts WHERE season_id=?").get(seasonId) as Row | undefined;
+    if (!row) return undefined;
+    return {
+      seasonId,
+      ...(JSON.parse(String(row.script_json)) as Omit<SeasonScript, "seasonId" | "createdAt">),
+      createdAt: String(row.created_at),
+    };
   }
 
   saveSeasonPlan(seasonId: string, episodes: Array<{ dayNumber: number; runId: string; comic: ComicPublishInput }>, now = new Date().toISOString()): SeasonEpisode[] {

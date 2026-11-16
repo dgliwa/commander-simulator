@@ -25,13 +25,14 @@ Simulation:
 3. After all games, call `commander_run_log` for every stored run. Page through each log until `hasMore` is false. Preserve winners, eliminations, important casts, attacks, blocks, removal, sacrifice, recursion, commander damage, and reversals.
 
 Whole-season planning:
-1. Create the full arc only after reading all seven factual logs.
-2. Call `commander_season_plan` once with exactly days 1-7 and 3 pages per day, 4-6 panels per page.
-3. Use this dramatic progression: introduction, first rivalry, setback/discovery, midpoint reversal, consequences/alliances, approach to finale, finale/aftermath.
-4. Bind day N to game N. Every page needs at least one concrete factual `gameplayCue` from that run and every episode needs at least two visibly distinct settings.
-5. Write one detailed continuity guide reused verbatim across all seven episodes. Define exact visual appearance, silhouette, clothing, equipment, scale, color accents, voice, injuries, recurring locations, weather progression, and props for all six commanders. The renderer locks medium and background style by season automatically.
-6. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters. Give each participant a concrete voice recipe: preferred sentence length and rhythm, characteristic diction, worldview, humor or lack of it, what they avoid saying, and how they behave under pressure. Voices must be distinguishable even without speaker labels.
-7. Rewrite the entire season's dialogue as one pass before submission:
+1. Create the complete screenplay only after reading all seven factual logs. Do not improvise one episode at a time.
+2. Call `commander_season_script` once before any comic-page planning. Store exactly six cast voice recipes, one season continuity guide, and days 1-7 with exactly three scenes each. Every scene must lock its setting, dramatic beat, factual gameplay cues, and final dialogue. Dialogue is written and revised at this screenplay stage—not during rendering or daily publication.
+3. Use this dramatic progression across the stored screenplay: introduction, first rivalry, setback/discovery, midpoint reversal, consequences/alliances, approach to finale, finale/aftermath.
+4. After the screenplay is durably stored, call `commander_season_plan` once with exactly days 1-7 and 3 pages per day, 4-6 panels per page. Copy each scripted episode summary, title, premise, dramatic question, continuity guide, scene title, setting, story beat, and background elements exactly. Place every scripted dialogue line into panels exactly once and in order, without adding or rewriting dialogue. Place every scripted gameplay cue verbatim into a panel.
+5. Bind day N to game N. Every page needs at least one concrete factual `gameplayCue` from that run and every episode needs at least two visibly distinct settings.
+6. Write one detailed continuity guide reused verbatim across all seven episodes. Define exact visual appearance, silhouette, clothing, equipment, scale, color accents, voice, injuries, recurring locations, weather progression, and props for all six commanders. The renderer locks medium and background style by season automatically.
+7. `personaDirections` for an episode must include that game's four participants and use commander names—not deck names—as acting characters. Give each participant a concrete voice recipe: preferred sentence length and rhythm, characteristic diction, worldview, humor or lack of it, what they avoid saying, and how they behave under pressure. Voices must be distinguishable even without speaker labels.
+8. Rewrite the entire season's dialogue as one pass before storing the screenplay:
    - Keep speech sparse; silence and physical reactions are preferable to filler.
    - Every line must perform a dramatic action: pressure, evade, bargain, provoke, joke, confess, reveal, refuse, mourn, or decide.
    - Use subtext, interruptions, callbacks to specific prior events, asymmetrical exchanges, and character-specific observations.
@@ -39,10 +40,10 @@ Whole-season planning:
    - Reject generic fantasy lines such as “This ends now,” “You cannot stop me,” “So be it,” “Not yet,” or interchangeable declarations about fate, victory, and power.
    - Do not reuse a line, catchphrase, threat, reaction, sentence opening, or exchange structure anywhere across the seven episodes.
    - Read dialogue alone without speaker names; revise any line that could be spoken unchanged by another commander.
-8. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
-9. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
-10. Storing the plan automatically queues one full-bleed season cover using the locked continuity and art direction.
+9. Keep all published prose entirely in-world. Translate cards, spells, and mechanics into natural actions, magic, and consequences. Optionally add sparse, cheeky Easter eggs with natural double meanings—such as tapping out, counters, a stack of reactions, returning from a graveyard, command, or an improbably timely draw. Each reference must still work for a reader who misses it. Never explain the story as a game or overtly refer to players, turns, decks, episodes, Commander, Magic: The Gathering, or the publication schedule in titles, dialogue, or captions.
+10. If both heroes lose the finale, write an honest tragic, bittersweet, or legacy-centered ending. Never convert defeat into victory.
+11. Storing the comic plan automatically queues one full-bleed season cover using the locked continuity and art direction.
 
-Do not stop after selecting commanders or searching for cards. Continue until the current season has seven stored games and seven stored episodes, resuming durable partial progress as needed. A wrapper independently verifies these milestones and marks the scheduled run failed when they are absent.
+Do not stop after selecting commanders or searching for cards. Continue until the current season has seven stored games, one stored seven-episode screenplay, and seven stored comic episodes, resuming durable partial progress as needed. A wrapper independently verifies these milestones and marks the scheduled run failed when they are absent.
 
 Finish with a concise season-prepared summary: title, heroes, four generated opponents, seven winners, cover status, and confirmation that seven episodes are stored. Do not publish episode 1; the daily job owns episode publication.

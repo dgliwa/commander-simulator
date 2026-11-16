@@ -44,8 +44,43 @@ export interface SimulationGame {
   status: "completed" | "draw" | "failed";
 }
 
-export type SeasonStatus = "draft" | "simulating" | "awaiting_plan" | "ready" | "publishing" | "completed";
+export type SeasonStatus = "draft" | "simulating" | "awaiting_script" | "awaiting_plan" | "ready" | "publishing" | "completed";
 export type SeasonEpisodeStatus = "planned" | "queued" | "running" | "published" | "failed";
+export interface SeasonScriptDialogue {
+  speaker: string;
+  text: string;
+}
+export interface SeasonScriptScene {
+  sceneNumber: number;
+  title: string;
+  setting: string;
+  storyBeat: string;
+  backgroundElements: string[];
+  gameplayCues: string[];
+  dialogue: SeasonScriptDialogue[];
+}
+export interface SeasonScriptEpisode {
+  dayNumber: number;
+  title: string;
+  summary: string;
+  scenes: SeasonScriptScene[];
+}
+export interface SeasonScriptCharacter {
+  publicId: string;
+  deckName: string;
+  commanderName: string;
+  role: string;
+  voice: string;
+}
+export interface SeasonScript {
+  seasonId: string;
+  premise: string;
+  dramaticQuestion: string;
+  continuityGuide: string;
+  characters: SeasonScriptCharacter[];
+  episodes: SeasonScriptEpisode[];
+  createdAt: string;
+}
 
 export interface ComicSeason {
   id: string;

@@ -18,7 +18,9 @@ The plugin reads normalized public Moxfield deck snapshots from Magic Workspace,
 - Deterministic daily four-deck selection with each persona assigned once
 - Durable seven-day comic seasons with two owned heroes and four generated/not-owned opponents
 - Six round-robin four-player games plus a seventh top-opponent finale
-- Stored seven-episode plans bound to factual simulation runs
+- A durable whole-season screenplay created only after all seven factual game logs are read
+- Exactly three stored scenes per day locking setting, dramatic beat, factual cues, and final dialogue before panel breakdown
+- Stored seven-episode comic plans bound to the screenplay and factual simulation runs
 - One locked art direction and continuity bible across all season episodes
 - Deterministic sequential comic rendering through the headless OpenClaw image CLI
 - Resumable page generation with validated owner-only PNGs and a durable prompt manifest
@@ -47,6 +49,7 @@ Forge personas are heuristic profiles, not language-model roleplay personas. Ric
 - `commander_simulate`
 - `commander_season_create`
 - `commander_season_simulate_next`
+- `commander_season_script`
 - `commander_season_plan`
 - `commander_season_publish_next`
 - `commander_season_status`
@@ -73,7 +76,7 @@ Plugin data defaults to:
 
 The Magic Workspace registry defaults to `~/.openclaw/plugins/magic-workspace/magic.sqlite`.
 
-Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The tool validates a structured story plan, panel beats, sparse voice-specific dialogue, concrete persona voice recipes, and a repeated continuity guide. Generic filler and repeated dialogue are rejected before an owner-only detached publisher is queued. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
+Configure `comicDiscordTarget` as a fixed `channel:<Discord channel ID>` before using `commander_comic_publish`. The weekly workflow first validates and atomically stores a complete seven-episode screenplay after all simulations. Comic planning must then preserve its scene framing, factual cues, and final dialogue exactly instead of inventing dialogue during panel breakdown. The tool also validates panel beats, concrete persona voice recipes, and a repeated continuity guide. Generic filler and repeated dialogue are rejected before an owner-only detached publisher is queued. The publisher calls `openclaw infer image generate` sequentially, skips already valid 1024×1536 PNG pages, records durable page-level status, and sends the summary plus successful pages directly after rendering settles. Normal agent flows must not poll; `commander_comic_status` is for explicit inspection and recovery.
 
 Completed comics expose a read-only, publication-safe projection for the blog publisher:
 

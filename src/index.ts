@@ -69,6 +69,42 @@ const seasonEpisode = Type.Object({
   pages: Type.Array(comicPage, { minItems: 3, maxItems: 4 }),
 }, { additionalProperties: false });
 
+const seasonScriptDialogue = Type.Object({
+  speaker: Type.String({ minLength: 1, maxLength: 100 }),
+  text: Type.String({ minLength: 1, maxLength: 120 }),
+}, { additionalProperties: false });
+const seasonScriptScene = Type.Object({
+  sceneNumber: Type.Integer({ minimum: 1, maximum: 3 }),
+  title: Type.String({ minLength: 1, maxLength: 200 }),
+  setting: Type.String({ minLength: 20, maxLength: 1_000 }),
+  storyBeat: Type.String({ minLength: 20, maxLength: 2_000 }),
+  backgroundElements: Type.Array(Type.String({ minLength: 3, maxLength: 300 }), { minItems: 2, maxItems: 4 }),
+  gameplayCues: Type.Array(Type.String({ minLength: 10, maxLength: 500 }), {
+    minItems: 1,
+    maxItems: 4,
+    description: "Exact factual moments from the linked simulation log that the later comic page must depict.",
+  }),
+  dialogue: Type.Array(seasonScriptDialogue, {
+    maxItems: 4,
+    description: "Final dialogue for this scene. Comic panels must preserve these lines exactly and in order.",
+  }),
+}, { additionalProperties: false });
+const seasonScriptEpisode = Type.Object({
+  dayNumber: Type.Integer({ minimum: 1, maximum: 7 }),
+  title: Type.String({ minLength: 1, maxLength: 300 }),
+  summary: Type.String({ minLength: 20, maxLength: 8_000 }),
+  scenes: Type.Array(seasonScriptScene, { minItems: 3, maxItems: 3 }),
+}, { additionalProperties: false });
+const seasonScriptCharacter = Type.Object({
+  publicId: id,
+  role: Type.String({ minLength: 3, maxLength: 500 }),
+  voice: Type.String({
+    minLength: 20,
+    maxLength: 500,
+    description: "Concrete, distinguishable voice recipe: rhythm, diction, worldview, humor, verbal avoidance, and behavior under pressure.",
+  }),
+}, { additionalProperties: false });
+
 async function withService<T>(api: any, config: Record<string, unknown>, operation: (service: CommanderSimulatorService) => T | Promise<T>): Promise<T> {
   const stateDir = api.runtime.state.resolveStateDir(process.env);
   const paths = resolveSimulatorPaths(stateDir, config);
@@ -177,8 +213,22 @@ export default defineToolPlugin({
       execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.simulateNextSeasonGame(input)); },
     }),
     tool({
+      name: "commander_season_script",
+      description: "After all seven games and full logs are available, atomically store the complete season screenplay before comic-page breakdown: six character voices, one continuity bible, and exactly three factual scenes per day with final dialogue. This never renders or publishes.",
+      parameters: Type.Object({
+        seasonId: id,
+        confirmed: Type.Literal(true),
+        premise: Type.String({ minLength: 20, maxLength: 2_000 }),
+        dramaticQuestion: Type.String({ minLength: 10, maxLength: 1_000 }),
+        continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
+        characters: Type.Array(seasonScriptCharacter, { minItems: 6, maxItems: 6 }),
+        episodes: Type.Array(seasonScriptEpisode, { minItems: 7, maxItems: 7 }),
+      }, { additionalProperties: false }),
+      execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.scriptSeason(input)); },
+    }),
+    tool({
       name: "commander_season_plan",
-      description: "After all seven games, store one complete seven-episode narrative plan and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible. Dialogue must be voice-specific, active, and varied across all seven episodes; generic or repeated lines are rejected.",
+      description: "After the durable season screenplay is stored, break its exact scenes, dialogue, settings, and factual cues into seven comic plans and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible. Dialogue must be voice-specific, active, and varied across all seven episodes; generic or repeated lines are rejected.",
       parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true), episodes: Type.Array(seasonEpisode, { minItems: 7, maxItems: 7 }) }, { additionalProperties: false }),
       execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.planSeason(input)); },
     }),
