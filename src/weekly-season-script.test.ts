@@ -12,6 +12,30 @@ afterEach(() => {
 });
 
 describe("weekly season verifier", () => {
+  it("does not invoke daily publication without a publishable season", () => {
+    const root = mkdtempSync(join(tmpdir(), "commander-daily-"));
+    roots.push(root);
+    const databasePath = join(root, "simulator.sqlite");
+    const database = new DatabaseSync(databasePath);
+    database.exec(`
+      CREATE TABLE comic_seasons(id TEXT PRIMARY KEY,status TEXT,created_at TEXT);
+      CREATE TABLE season_episodes(season_id TEXT,day_number INTEGER,status TEXT);
+      INSERT INTO comic_seasons VALUES('completed','completed','2026-11-01T00:00:00Z');
+    `);
+    database.close();
+
+    expect(nextPublishable(databasePath).stdout).toBe("");
+
+    const publishable = new DatabaseSync(databasePath);
+    publishable.prepare("INSERT INTO comic_seasons VALUES(?,?,?)").run("ready-season", "ready", "2026-11-02T00:00:00Z");
+    for (let day = 1; day <= 7; day += 1) {
+      publishable.prepare("INSERT INTO season_episodes VALUES(?,?,?)").run("ready-season", day, "planned");
+    }
+    publishable.close();
+
+    expect(nextPublishable(databasePath).stdout.trim()).toBe("ready-season");
+  });
+
   it("fails closed until all seven games and episodes are durable", () => {
     const root = mkdtempSync(join(tmpdir(), "commander-weekly-"));
     roots.push(root);
@@ -46,8 +70,16 @@ describe("weekly season verifier", () => {
 });
 
 function verify(databasePath: string) {
-  return spawnSync(process.execPath, [join(process.cwd(), "scripts", "verify-weekly-season.mjs")], {
+  return runScript("verify-weekly-season.mjs", databasePath, { COMMANDER_SEASON_KEY: "season-2026-w46" });
+}
+
+function nextPublishable(databasePath: string) {
+  return runScript("next-publishable-season.mjs", databasePath);
+}
+
+function runScript(script: string, databasePath: string, extraEnv: Record<string, string> = {}) {
+  return spawnSync(process.execPath, [join(process.cwd(), "scripts", script)], {
     encoding: "utf8",
-    env: { ...process.env, COMMANDER_SIMULATOR_DB: databasePath, COMMANDER_SEASON_KEY: "season-2026-w46" },
+    env: { ...process.env, COMMANDER_SIMULATOR_DB: databasePath, ...extraEnv },
   });
 }
