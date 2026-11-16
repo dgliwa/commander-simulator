@@ -36,8 +36,18 @@ if (process.argv.includes("--reconcile-only")) {
   const magic = new MagicDeckSource(paths.magicDatabase);
   try {
     const service = new CommanderSimulatorService(database, magic, paths, { comicDiscordTarget: target, openclawCommand });
-    const publication = service.publishNextSeasonEpisode({ seasonId: season.id, confirmed: true });
-    process.stdout.write(`${JSON.stringify({ reconciled, needsPreparation: false, seasonId: season.id, publication })}\n`);
+    const publication = service.publishNextSeasonEpisode({ seasonId: season.id, confirmed: true }) as Record<string, unknown>;
+    process.stdout.write(`${JSON.stringify({
+      reconciled,
+      needsPreparation: false,
+      seasonId: season.id,
+      publication: {
+        queued: publication.queued,
+        publicationType: publication.publicationType,
+        dayNumber: publication.dayNumber,
+        reason: publication.reason,
+      },
+    })}\n`);
   } finally {
     magic.close();
     database.close();

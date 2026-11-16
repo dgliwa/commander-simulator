@@ -36,7 +36,17 @@ else {
     try {
         const service = new CommanderSimulatorService(database, magic, paths, { comicDiscordTarget: target, openclawCommand });
         const publication = service.publishNextSeasonEpisode({ seasonId: season.id, confirmed: true });
-        process.stdout.write(`${JSON.stringify({ reconciled, needsPreparation: false, seasonId: season.id, publication })}\n`);
+        process.stdout.write(`${JSON.stringify({
+            reconciled,
+            needsPreparation: false,
+            seasonId: season.id,
+            publication: {
+                queued: publication.queued,
+                publicationType: publication.publicationType,
+                dayNumber: publication.dayNumber,
+                reason: publication.reason,
+            },
+        })}\n`);
     }
     finally {
         magic.close();
