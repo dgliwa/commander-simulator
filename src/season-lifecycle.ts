@@ -10,6 +10,8 @@ import type { ComicSeason, SeasonEpisodeStatus } from "./types.js";
 interface PublicationManifest {
   status?: string;
   completedAt?: string;
+  workerPid?: number;
+  error?: string;
 }
 
 export interface SeasonReconciliation {
@@ -33,6 +35,16 @@ function exportPath(comicRoot: string, seasonId: string): string {
   return resolve(comicRoot, "seasons", seasonId, "season-export.json");
 }
 
+function rendererIsAlive(workerPid: number | undefined, runId: string): boolean {
+  if (!Number.isInteger(workerPid) || workerPid! <= 0) return false;
+  try {
+    const command = readFileSync(`/proc/${workerPid}/cmdline`, "utf8");
+    return command.includes("comic-worker.js") && command.includes(runId);
+  } catch {
+    return false;
+  }
+}
+
 function writeOwnerOnlyJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const temporary = `${path}.${process.pid}.tmp`;
@@ -52,12 +64,23 @@ export function reconcileSeason(
     let season = database.getSeason(seasonId);
     const episodes = database.getSeasonEpisodes(seasonId);
     for (const episode of episodes) {
-      const manifest = readManifest(join(resolve(comicRoot, episode.runId), "manifest.json"));
+      const manifestPath = join(resolve(comicRoot, episode.runId), "manifest.json");
+      const manifest = readManifest(manifestPath);
       if (!manifest?.status) continue;
       let status: SeasonEpisodeStatus | undefined;
       if (manifest.status === "completed") status = "published";
-      else if (manifest.status === "queued" || manifest.status === "running") status = manifest.status;
-      else if (manifest.status === "failed" || manifest.status === "partial") status = "failed";
+      else if (manifest.status === "queued" || manifest.status === "running") {
+        if (rendererIsAlive(manifest.workerPid, episode.runId)) status = manifest.status;
+        else {
+          status = "failed";
+          writeOwnerOnlyJson(manifestPath, {
+            ...manifest,
+            status: "failed",
+            completedAt: new Date().toISOString(),
+            error: `Renderer worker ${manifest.workerPid ?? "unknown"} is no longer running; publication may be retried.`,
+          });
+        }
+      } else if (manifest.status === "failed" || manifest.status === "partial") status = "failed";
       if (status && status !== episode.status) {
         database.updateEpisodeStatus(
           seasonId,
