@@ -97,6 +97,27 @@ describe("Commander season publication projection", () => {
     });
   });
 
+  it("recovers a queued episode whose detached renderer no longer exists", () => {
+    const f = fixture("publishing");
+    const day = 6;
+    const runId = `00000000-0000-4000-8000-${String(day).padStart(12, "0")}`;
+    const db = new DatabaseSync(f.database);
+    db.prepare("UPDATE season_episodes SET status='queued', published_at=NULL WHERE season_id=? AND day_number=?").run(f.seasonId, day);
+    db.close();
+    writeFileSync(join(f.comicRoot, runId, "manifest.json"), JSON.stringify({
+      status: "queued",
+      runId,
+      workerPid: 2147483647,
+      queuedAt: "2026-10-29T12:00:00.000Z",
+    }));
+
+    const result = reconcileSeason(f.database, f.magicDatabase, f.comicRoot, f.seasonId);
+    expect(result).toMatchObject({ status: "publishing", publishedEpisodes: 6, activeEpisodes: 0 });
+    const verify = new DatabaseSync(f.database);
+    expect(verify.prepare("SELECT status FROM season_episodes WHERE season_id=? AND day_number=?").get(f.seasonId, day)).toEqual({ status: "failed" });
+    verify.close();
+  });
+
   it("deterministically finalizes delivered episodes and writes the season export", () => {
     const f = fixture("publishing");
     const result = reconcileSeason(f.database, f.magicDatabase, f.comicRoot, f.seasonId);
