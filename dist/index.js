@@ -65,7 +65,7 @@ const seasonEpisode = Type.Object({
     summary: Type.String({ minLength: 1, maxLength: 8_000 }),
     continuityGuide: Type.String({ minLength: 200, maxLength: 12_000 }),
     story: comicStory,
-    pages: Type.Array(comicPage, { minItems: 3, maxItems: 4 }),
+    pages: Type.Array(comicPage, { minItems: 1, maxItems: 1, description: "Exactly one 4-6 panel page that condenses the day's three scripted scenes in order." }),
 }, { additionalProperties: false });
 const seasonScriptDialogue = Type.Object({
     speaker: Type.String({ minLength: 1, maxLength: 100 }),
@@ -225,7 +225,7 @@ export default defineToolPlugin({
         }),
         tool({
             name: "commander_season_plan",
-            description: "After the durable season screenplay is stored, break its exact scenes, dialogue, settings, and factual cues into seven comic plans and queue its full-bleed Discord cover. Each day is bound to its corresponding persisted simulation run, uses 3-4 pages, must cite factual gameplay cues, and inherits one season-wide art direction and continuity bible. Dialogue must be voice-specific, active, and varied across all seven episodes; generic or repeated lines are rejected.",
+            description: "After the durable season screenplay is stored, condense each day's three scenes, exact dialogue, settings, and factual cues into one 4-6 panel comic page. All seven days remain bound to their persisted simulation runs and inherit one season-wide art direction and continuity bible. Dialogue must be voice-specific, active, and varied across the season; generic or repeated lines are rejected.",
             parameters: Type.Object({ seasonId: id, confirmed: Type.Literal(true), episodes: Type.Array(seasonEpisode, { minItems: 7, maxItems: 7 }) }, { additionalProperties: false }),
             execute: async (input, config, { api, signal }) => { signal?.throwIfAborted(); return withService(api, config, service => service.planSeason(input)); },
         }),

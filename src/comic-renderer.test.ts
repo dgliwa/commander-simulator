@@ -212,7 +212,7 @@ describe("ComicRenderer", () => {
   test("rejects a fifth comic page", () => {
     const source = input();
     source.pages.push({ ...source.pages[0], pageNumber: 4 }, { ...source.pages[0], pageNumber: 5 });
-    expect(() => validateComicInput(source)).toThrow("Comic must contain 3-4 pages.");
+    expect(() => validateComicInput(source)).toThrow("Standalone comics must contain 3-4 pages.");
   });
 
   test("queues detached publication immediately and suppresses duplicate launches", () => {

@@ -42,17 +42,13 @@ export function validateScriptedComics(script, planned) {
             || comic.story.dramaticQuestion !== script.dramaticQuestion) {
             throw new Error(`Day ${episode.dayNumber} comic framing must match the stored season script exactly.`);
         }
-        if (comic.pages.length !== 3)
-            throw new Error(`Day ${episode.dayNumber} must contain exactly three pages, one per scripted scene.`);
-        episode.scenes.forEach((scene, sceneIndex) => {
-            const page = comic.pages[sceneIndex];
-            if (!page || page.pageNumber !== scene.sceneNumber || page.title !== scene.title
-                || page.setting !== scene.setting || page.storyBeat !== scene.storyBeat
-                || JSON.stringify(page.backgroundElements) !== JSON.stringify(scene.backgroundElements)) {
-                throw new Error(`Day ${episode.dayNumber} page ${scene.sceneNumber} must inherit its stored scene framing exactly.`);
-            }
-            assertPageFollowsScene(episode.dayNumber, scene, page.panels);
-        });
+        if (comic.pages.length !== 1)
+            throw new Error(`Day ${episode.dayNumber} must contain exactly one page.`);
+        const page = comic.pages[0];
+        if (!page || page.pageNumber !== 1 || page.title !== episode.title) {
+            throw new Error(`Day ${episode.dayNumber} must use one page with the stored episode title.`);
+        }
+        assertPageFollowsEpisode(episode, page.panels);
     }
 }
 export function buildScriptedComics(input) {
@@ -67,22 +63,19 @@ export function buildScriptedComics(input) {
         if (!game)
             throw new Error(`Missing game for day ${episode.dayNumber}.`);
         const pagePlans = [...plan.pages].sort((left, right) => left.pageNumber - right.pageNumber);
-        if (pagePlans.length !== 3)
-            throw new Error(`Day ${episode.dayNumber} must contain exactly three pages, one per scripted scene.`);
-        const pages = episode.scenes.map((scene, sceneIndex) => {
-            const page = pagePlans[sceneIndex];
-            if (!page || page.pageNumber !== scene.sceneNumber)
-                throw new Error(`Day ${episode.dayNumber} page numbers must cover scripted scenes 1 through 3.`);
-            assertPageFollowsScene(episode.dayNumber, scene, page.panels);
-            return {
-                pageNumber: scene.sceneNumber,
-                title: scene.title,
-                storyBeat: scene.storyBeat,
-                setting: scene.setting,
-                backgroundElements: scene.backgroundElements,
+        if (pagePlans.length !== 1 || pagePlans[0]?.pageNumber !== 1) {
+            throw new Error(`Day ${episode.dayNumber} must contain exactly one page numbered 1.`);
+        }
+        const page = pagePlans[0];
+        assertPageFollowsEpisode(episode, page.panels);
+        const pages = [{
+                pageNumber: 1,
+                title: episode.title,
+                storyBeat: episode.scenes.map(scene => scene.storyBeat).join(" "),
+                setting: episode.scenes.map(scene => scene.setting).join("; "),
+                backgroundElements: [...new Set(episode.scenes.flatMap(scene => scene.backgroundElements))].slice(0, 4),
                 panels: page.panels,
-            };
-        });
+            }];
         const participantSet = new Set(game.participantPublicIds);
         const personaById = new Map(game.participants.map(participant => [participant.publicId, participant.persona]));
         const personaDirections = input.script.characters
@@ -150,19 +143,22 @@ function validateEpisode(episode, expectedDay, speakers) {
     });
     if (dialogueCount < 3)
         throw new Error(`Day ${expectedDay} requires at least three purposeful dialogue lines across its script.`);
+    const gameplayCueCount = episode.scenes.reduce((total, scene) => total + scene.gameplayCues.length, 0);
+    if (gameplayCueCount > 6)
+        throw new Error(`Day ${expectedDay} may contain at most six gameplay cues across its one-page episode.`);
 }
-function assertPageFollowsScene(dayNumber, scene, panels) {
+function assertPageFollowsEpisode(episode, panels) {
     if (panels.length < 4 || panels.length > 6)
-        throw new Error(`Day ${dayNumber} scene ${scene.sceneNumber} requires 4-6 panels.`);
+        throw new Error(`Day ${episode.dayNumber} requires 4-6 panels on its single page.`);
     const plannedDialogue = panels.flatMap(panel => panel.dialogue.map(line => `${line.speaker}\u0000${line.text}`));
-    const scriptedDialogue = scene.dialogue.map(line => `${line.speaker}\u0000${line.text}`);
+    const scriptedDialogue = episode.scenes.flatMap(scene => scene.dialogue.map(line => `${line.speaker}\u0000${line.text}`));
     if (JSON.stringify(plannedDialogue) !== JSON.stringify(scriptedDialogue)) {
-        throw new Error(`Day ${dayNumber} scene ${scene.sceneNumber} panels must use the scripted dialogue exactly, in order, without additions.`);
+        throw new Error(`Day ${episode.dayNumber} panels must use all scripted dialogue exactly, in order, without additions.`);
     }
     const cues = new Set(panels.flatMap(panel => panel.gameplayCue ? [panel.gameplayCue] : []));
-    const missing = scene.gameplayCues.filter(cue => !cues.has(cue));
+    const missing = episode.scenes.flatMap(scene => scene.gameplayCues).filter(cue => !cues.has(cue));
     if (missing.length)
-        throw new Error(`Day ${dayNumber} scene ${scene.sceneNumber} is missing scripted gameplay cues: ${missing.join(" | ")}`);
+        throw new Error(`Day ${episode.dayNumber} is missing scripted gameplay cues: ${missing.join(" | ")}`);
 }
 function dialogueValidationInput(script) {
     return {
