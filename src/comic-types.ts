@@ -279,7 +279,11 @@ export function validateComicInput(input: ComicPublishInput): void {
     if (commanderNames.has(commanderKey)) throw new Error(`Duplicate commander direction: ${direction.commanderName}.`);
     commanderNames.add(commanderKey);
   }
-  if (input.pages.length < 3 || input.pages.length > 4) throw new Error("Comic must contain 3-4 pages.");
+  if (input.seriesLabel) {
+    if (input.pages.length !== 1) throw new Error("Season episodes must contain exactly one page.");
+  } else if (input.pages.length < 3 || input.pages.length > 4) {
+    throw new Error("Standalone comics must contain 3-4 pages.");
+  }
   const pageNumbers = new Set<number>();
   const settings = new Set<string>();
   let dialogueCount = 0;
@@ -317,7 +321,7 @@ export function validateComicInput(input: ComicPublishInput): void {
     }
     if (pageGameplayCues < 1) throw new Error(`Page ${page.pageNumber} must contain at least one factual gameplayCue.`);
   }
-  if (settings.size < 2) throw new Error("The comic must use at least two visibly distinct page settings.");
+  if (!input.seriesLabel && settings.size < 2) throw new Error("Standalone comics must use at least two visibly distinct page settings.");
   if (gameplayCueCount < input.pages.length) throw new Error("The comic must contain at least one factual gameplay cue per page.");
   if (dialogueCount < input.pages.length) throw new Error("The comic must average at least one dialogue line per page.");
   rejectDeckNamesAsCharacters(input);

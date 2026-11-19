@@ -223,10 +223,21 @@ const scripted = service.scriptSeason({
 });
 expect(scripted.season.status).toBe("awaiting_plan");
 expect(scripted.nextAction).toBe("plan");
-const rewritten = structuredClone(episodes);
+const onePageEpisodes = episodes.map((episode: any) => ({
+  ...episode,
+  pages: [{
+    pageNumber: 1,
+    title: episode.story.title,
+    storyBeat: episode.pages.map((page: any) => page.storyBeat).join(" "),
+    setting: episode.pages.map((page: any) => page.setting).join("; "),
+    backgroundElements: episode.pages.flatMap((page: any) => page.backgroundElements).slice(0, 4),
+    panels: episode.pages.flatMap((page: any) => page.panels.slice(0, 2)),
+  }],
+}));
+const rewritten = structuredClone(onePageEpisodes);
 rewritten[0]!.pages[0]!.panels[1]!.dialogue[0]!.text = "A later page rewrite must not replace the approved screenplay line.";
 expect(() => service.planSeason({ seasonId, confirmed: true, episodes: rewritten })).toThrow(/scripted dialogue exactly/);
-const planned = service.planSeason({ seasonId, confirmed: true, episodes });
+const planned = service.planSeason({ seasonId, confirmed: true, episodes: onePageEpisodes });
       expect(planned.season.status).toBe("ready");
       expect(planned.episodes).toHaveLength(7);
       expect(planned.episodes.every((episode: any) => episode.status === "planned")).toBe(true);

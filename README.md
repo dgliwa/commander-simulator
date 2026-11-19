@@ -99,7 +99,7 @@ node dist/publication-cli.js \
   season get <season-id>
 ```
 
-The season export contains the cover and every comic page in reading order, commander names with Scryfall links, season win/loss/draw records, and public match summaries plus key gameplay moments. It fails closed while a season or any episode remains incomplete.
+Each season episode is one 4-6 panel page, producing seven daily pages plus the cover. The completed season export preserves those images in reading order with commander records and factual game results. It fails closed while a season or any episode remains incomplete.
 
 `run-daily-season-orchestrator.sh` is the sole scheduled lifecycle entry point. It deterministically reconciles renderer manifests, finalizes and exports completed seasons, selects the oldest unfinished season, invokes the agentic preparation workflow only when no publishable season exists, and queues the next artifact. Cover delivery deterministically queues episode 1; episode delivery reconciles durable state immediately, and episode 7 completion finalizes and exports the season. These callbacks are idempotent, while the next daily run remains the recovery path after interruption.
 
