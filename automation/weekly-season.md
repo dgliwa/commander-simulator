@@ -1,9 +1,9 @@
-Prepare one complete seven-day Commander comic season for the current America/Chicago ISO week.
+Prepare one complete seven-day Commander comic season for the exact season key supplied by the wrapper directive above.
 
 This is an autonomous scheduled workflow. Treat simulation outcomes as immutable facts. The two owned heroes are protagonists, but never protect them from losing and never rewrite a winner.
 
 Resume before creating:
-1. Derive `seasonKey` as `season-YYYY-wNN` for the current America/Chicago ISO week.
+1. Read `seasonKey` from the wrapper directive. It uses the `season-YYYY-wNN` format; do not replace it with the current calendar week.
 2. Call `commander_season_status` with that exact `seasonKey`. If it exists, resume its `nextAction` instead of creating another season.
 3. If its next action is `publish_next` or `complete`, stop successfully; daily publication owns those states.
 

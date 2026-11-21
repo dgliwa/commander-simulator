@@ -36,6 +36,21 @@ describe("weekly season verifier", () => {
     expect(nextPublishable(databasePath).stdout.trim()).toBe("ready-season");
   });
 
+  it("selects the next unused week after completed seasons", () => {
+    const root = mkdtempSync(join(tmpdir(), "commander-season-key-"));
+    roots.push(root);
+    const databasePath = join(root, "simulator.sqlite");
+    const database = new DatabaseSync(databasePath);
+    database.exec(`
+      CREATE TABLE comic_seasons(season_key TEXT PRIMARY KEY,status TEXT);
+      INSERT INTO comic_seasons VALUES('season-2026-w47','completed');
+      INSERT INTO comic_seasons VALUES('season-2026-w48','completed');
+    `);
+    database.close();
+
+    expect(printKey(databasePath, "season-2026-w47").stdout.trim()).toBe("season-2026-w49");
+  });
+
   it("fails closed until all seven games and episodes are durable", () => {
     const root = mkdtempSync(join(tmpdir(), "commander-weekly-"));
     roots.push(root);
@@ -66,6 +81,14 @@ describe("weekly season verifier", () => {
     expect(valid.status).toBe(0);
     expect(valid.stdout).toContain("Commander season prepared");
     expect(valid.stdout).toContain("Seven simulations and seven episodes are durably stored");
+
+    const noLongerPublishable = new DatabaseSync(databasePath);
+    noLongerPublishable.prepare("UPDATE comic_seasons SET status='completed' WHERE id='season-id'").run();
+    noLongerPublishable.close();
+
+    const completedSeason = verify(databasePath);
+    expect(completedSeason.status).not.toBe(0);
+    expect(completedSeason.stderr).toContain("status is completed");
   });
 });
 
@@ -77,8 +100,12 @@ function nextPublishable(databasePath: string) {
   return runScript("next-publishable-season.mjs", databasePath);
 }
 
-function runScript(script: string, databasePath: string, extraEnv: Record<string, string> = {}) {
-  return spawnSync(process.execPath, [join(process.cwd(), "scripts", script)], {
+function printKey(databasePath: string, startingKey: string) {
+  return runScript("verify-weekly-season.mjs", databasePath, { COMMANDER_SEASON_KEY: startingKey }, ["--print-key"]);
+}
+
+function runScript(script: string, databasePath: string, extraEnv: Record<string, string> = {}, args: string[] = []) {
+  return spawnSync(process.execPath, [join(process.cwd(), "scripts", script), ...args], {
     encoding: "utf8",
     env: { ...process.env, COMMANDER_SIMULATOR_DB: databasePath, ...extraEnv },
   });

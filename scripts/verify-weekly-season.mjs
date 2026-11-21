@@ -24,15 +24,44 @@ function isoWeekKey(now = new Date()) {
   return `season-${isoYear}-w${String(week).padStart(2, "0")}`;
 }
 
-const seasonKey = process.env.COMMANDER_SEASON_KEY || isoWeekKey();
-if (process.argv.includes("--print-key")) {
-  process.stdout.write(`${seasonKey}\n`);
-  process.exit(0);
+function nextIsoWeekKey(seasonKey) {
+  const match = /^season-(\d{4})-w(\d{2})$/.exec(seasonKey);
+  if (!match) throw new Error(`Invalid season key: ${seasonKey}.`);
+  const year = Number(match[1]);
+  const week = Number(match[2]);
+  const december28 = new Date(Date.UTC(year, 11, 28));
+  const weekday = december28.getUTCDay() || 7;
+  december28.setUTCDate(december28.getUTCDate() + 4 - weekday);
+  const yearStart = new Date(Date.UTC(december28.getUTCFullYear(), 0, 1));
+  const weeksInYear = Math.ceil((((december28 - yearStart) / 86_400_000) + 1) / 7);
+  return week < weeksInYear
+    ? `season-${year}-w${String(week + 1).padStart(2, "0")}`
+    : `season-${year + 1}-w01`;
+}
+
+function nextAvailableSeasonKey(database, startingKey) {
+  let seasonKey = startingKey;
+  for (let offset = 0; offset < 520; offset += 1) {
+    const season = database.prepare("SELECT status FROM comic_seasons WHERE season_key=?").get(seasonKey);
+    if (!season || String(season.status) !== "completed") return seasonKey;
+    seasonKey = nextIsoWeekKey(seasonKey);
+  }
+  throw new Error("Could not find an available Commander season key.");
 }
 
 const stateDir = process.env.OPENCLAW_STATE_DIR || join(homedir(), ".openclaw");
 const databasePath = process.env.COMMANDER_SIMULATOR_DB || join(stateDir, "plugins", "commander-simulator", "simulator.sqlite");
 const database = new DatabaseSync(databasePath, { readOnly: true });
+const requestedSeasonKey = process.env.COMMANDER_SEASON_KEY || isoWeekKey();
+const seasonKey = process.argv.includes("--print-key")
+  ? nextAvailableSeasonKey(database, requestedSeasonKey)
+  : requestedSeasonKey;
+
+if (process.argv.includes("--print-key")) {
+  process.stdout.write(`${seasonKey}\n`);
+  database.close();
+  process.exit(0);
+}
 
 try {
   const season = database.prepare("SELECT id,title,status FROM comic_seasons WHERE season_key=?").get(seasonKey);
@@ -54,8 +83,8 @@ try {
   if (!episodes.every(episode => ["planned", "queued", "running", "published"].includes(String(episode.status)))) {
     throw new Error(`${seasonKey} contains a failed or invalid episode state.`);
   }
-  if (!["ready", "publishing", "completed"].includes(String(season.status))) {
-    throw new Error(`${seasonKey} is persisted with incomplete status ${season.status}.`);
+  if (!["ready", "publishing"].includes(String(season.status))) {
+    throw new Error(`${seasonKey} is not publishable because its status is ${season.status}.`);
   }
 
   const winners = games.map(game => {
